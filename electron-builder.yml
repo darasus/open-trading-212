@@ -1,0 +1,52 @@
+appId: com.darasus.opentrading212
+productName: open-trading-212
+copyright: Copyright © 2026 Ilya Daraseliya
+directories:
+  buildResources: build
+  output: release
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!docs/*'
+  - '!drizzle/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.oxlintrc.json,.oxfmtrc.json,dev-app-update.yml,CHANGELOG.md,README.md,AGENTS.md,CLAUDE.md}'
+  - '!{.env,.env.*,.npmrc,bun.lock,bunfig.toml,drizzle.config.ts,components.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+extraResources:
+  - from: drizzle
+    to: drizzle
+asarUnpack:
+  - resources/**
+  - '**/*.node'
+mac:
+  category: public.app-category.finance
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # CI turns this on with --config.mac.notarize=true when APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD
+  # and APPLE_TEAM_ID are present. Unsigned local builds stay installable via right-click > Open.
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}-${arch}.${ext}
+win:
+  executableName: open-trading-212
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+npmRebuild: false
+publish:
+  provider: github
+  owner: darasus
+  repo: open-trading-212

@@ -1,0 +1,269 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  open-trading-212 is dark-only. Flat near-black surfaces, edges drawn with 1px hairlines,
+  13px UI type, one restrained blue accent. Rows and dividers instead of card chrome.
+  No glows, no decorative backgrounds.
+*/
+:root {
+  --radius: 0.5rem;
+
+  --background: oklch(0.145 0.004 260);
+  --foreground: oklch(0.95 0.004 260);
+  --card: oklch(0.17 0.004 260);
+  --card-foreground: oklch(0.95 0.004 260);
+  --popover: oklch(0.2 0.005 260);
+  --popover-foreground: oklch(0.95 0.004 260);
+
+  --primary: oklch(0.93 0.004 260);
+  --primary-foreground: oklch(0.17 0.005 260);
+  --secondary: oklch(0.25 0.005 260);
+  --secondary-foreground: oklch(0.95 0.004 260);
+  --muted: oklch(0.22 0.005 260);
+  --muted-foreground: oklch(0.62 0.008 260);
+  --accent: oklch(1 0 0 / 6%);
+  --accent-foreground: oklch(0.95 0.004 260);
+  --destructive: oklch(0.7 0.18 22);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.72 0.11 235 / 60%);
+
+  --blue: oklch(0.74 0.12 235);
+  --violet: oklch(0.72 0.13 300);
+  --positive: oklch(0.78 0.13 165);
+  --negative: oklch(0.72 0.16 20);
+  --warning: oklch(0.82 0.13 80);
+
+  --chart-1: oklch(0.74 0.12 235);
+  --chart-2: oklch(0.72 0.13 300);
+  --chart-3: oklch(0.78 0.13 165);
+  --chart-4: oklch(0.82 0.13 80);
+  --chart-5: oklch(0.72 0.16 20);
+
+  --sidebar: oklch(0.155 0.004 260);
+  --sidebar-foreground: oklch(0.95 0.004 260);
+  --sidebar-primary: oklch(0.93 0.004 260);
+  --sidebar-primary-foreground: oklch(0.17 0.005 260);
+  --sidebar-accent: oklch(1 0 0 / 6%);
+  --sidebar-accent-foreground: oklch(0.95 0.004 260);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.72 0.11 235 / 60%);
+
+  /* Data-viz series: income takes the accent blue, spending a muted coral. */
+  --viz-income: #6aa9f2;
+  --viz-spending: #ef7a6a;
+  --viz-income-inverse: #8fc0f7;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Denser type scale: 13px body, 12px secondary, 11px labels. */
+  --text-xs: 11.5px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-base: 14px;
+  --text-base--line-height: 1.5;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-blue: var(--blue);
+  --color-violet: var(--violet);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --animate-fade-up: fade-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-slide-in-right: slide-in-right 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade-in: fade-in 0.18s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-sm text-foreground font-sans antialiased;
+    user-select: none;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: oklch(0.72 0.11 235 / 30%);
+  }
+  /* Thin scrollbars that sit quietly on the dark ground. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 10%);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 18%);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+  }
+  /* Native window drag region for the frameless title bar. */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+  select,
+  input[type='checkbox'] {
+    accent-color: var(--blue);
+  }
+  select option {
+    background: var(--popover);
+    color: var(--popover-foreground);
+  }
+}
+
+@layer components {
+  /* Flat card surface, kept for the few dialogs and forms that still want a box. */
+  .glass {
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  /* Small uppercase label used for section eyebrows and column headers. */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
+  /* Numbers: tabular figures, slightly tight. */
+  .num {
+    @apply tabular-nums tracking-[-0.01em];
+  }
+
+  /* Big figures: tighter still, with the 'ss02' alternate for a crisper 1. */
+  .display {
+    @apply tabular-nums tracking-[-0.03em];
+    font-feature-settings: 'cv11', 'ss01', 'ss02';
+  }
+
+  /* A row in a list: hairline below, quiet hover, clear selection. */
+  .row {
+    @apply relative flex items-center border-b border-border/60 transition-colors duration-100;
+  }
+  .row:hover {
+    background: oklch(1 0 0 / 3%);
+  }
+  .row[data-selected='true'] {
+    background: oklch(1 0 0 / 6%);
+  }
+  .row[data-selected='true']::before {
+    content: '';
+    position: absolute;
+    inset-block: 6px;
+    left: 0;
+    width: 2px;
+    border-radius: 999px;
+    background: var(--blue);
+  }
+
+  /* Segmented control, pill style. */
+  .seg {
+    @apply inline-flex items-center gap-px rounded-md bg-muted/60 p-0.5;
+  }
+  .seg-item {
+    @apply h-6 rounded-[5px] px-2 text-xs text-muted-foreground transition-colors;
+  }
+  .seg-item:hover {
+    @apply text-foreground;
+  }
+  .seg-item[data-active='true'] {
+    @apply bg-background/80 text-foreground;
+    box-shadow: inset 0 0 0 1px oklch(1 0 0 / 8%);
+  }
+
+  /* Proportional bar behind a ranked row. */
+  .bar-track {
+    @apply h-0.5 w-full overflow-hidden rounded-full bg-muted/80;
+  }
+  .bar-fill {
+    @apply h-full rounded-full transition-[width] duration-500 ease-out;
+  }
+}

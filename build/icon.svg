@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="oklch(0.27 0.014 260)"/>
+      <stop offset="1" stop-color="oklch(0.145 0.006 260)"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="oklch(0.78 0.13 165)" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="oklch(0.78 0.13 165)" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <clipPath id="tile"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#shadow)"/>
+  <g clip-path="url(#tile)">
+    <g stroke="#fff" stroke-opacity="0.07" stroke-width="8">
+      <line x1="100" y1="380" x2="924" y2="380"/>
+      <line x1="100" y1="540" x2="924" y2="540"/>
+      <line x1="100" y1="700" x2="924" y2="700"/>
+    </g>
+    <path d="M232 690 L408 548 L548 616 L792 334 L792 924 L232 924 Z" fill="url(#area)"/>
+    <polyline points="232,690 408,548 548,616 792,334" fill="none"
+      stroke="oklch(0.78 0.13 165)" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="792" cy="334" r="84" fill="oklch(0.78 0.13 165)" fill-opacity="0.18"/>
+  </g>
+  <rect x="102" y="102" width="820" height="820" rx="183" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="4"/>
+</svg>
