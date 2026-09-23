@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest something open-trading-212 could do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app is read-only by design: it will never place, edit or cancel orders or manage pies. The README's [Out of scope](https://github.com/darasus/open-trading-212#out-of-scope) section lists what else it doesn't do.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you're trying to do
+      description: The question you want answered or the task you want to get done, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Data and privacy
+      description: Would this need data from anywhere other than Trading 212 or your AI provider? New hosts on the network allow-list are a high bar.

@@ -34,6 +34,15 @@ Enforced in code, not just claimed:
 
 Honest limits: the allow-list covers `fetch` and Electron sessions, not raw sockets, so a dependency that connected through Node's `http`, `https` or `net` modules directly would not be stopped. Trading 212 has no historical value endpoint, so on days without a sync the value chart is an estimate: holdings are rebuilt by replaying your trades and priced between the prices of your own fills and today's price. Days with a sync show the real account total. Sync only happens while the app is open, and history endpoints are limited to 6 requests a minute, so a long history takes a few minutes to backfill the first time. The app is only as read-only as the key you give it.
 
+## Install
+
+Download the installer for your system from [Releases](https://github.com/darasus/open-trading-212/releases): a `.dmg` for macOS (Apple silicon or Intel) or a `-setup.exe` for Windows. The builds are not code-signed yet, so:
+
+- **macOS:** the first time, right-click the app in Applications and choose Open. Automatic updates can't install on an unsigned app, so download new versions from Releases.
+- **Windows:** if SmartScreen warns you, choose More info, then Run anyway.
+
+Or build it yourself; see [Development](#development).
+
 ## Getting started
 
 1. In the Trading 212 app: Settings, API (Beta), Generate API key. Tick only the read permissions (account, portfolio, metadata, history). Copy the key and the secret; the secret is shown once.

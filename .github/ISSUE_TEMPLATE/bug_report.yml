@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in open-trading-212 doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Issues are public.** Never paste a Trading 212 key or secret, an AI provider key, or real portfolio data: balances, holdings, screenshots of the Overview, or chat transcripts. Redact the numbers, or reproduce it with a Practice account.
+
+        Found a security or privacy problem? Don't open an issue. Report it privately instead, as described in [SECURITY.md](https://github.com/darasus/open-trading-212/blob/main/SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in Settings, next to Version.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: account
+    attributes:
+      label: Trading 212 account
+      options:
+        - Invest
+        - Stocks ISA
+        - Practice
+        - Not connected
+  - type: input
+    id: ai
+    attributes:
+      label: AI provider and model, if it's about Chat
+      placeholder: Anthropic, claude-sonnet-5
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error messages
+      description: The exact text of any error. Check it holds no keys or amounts first.
+      render: text
