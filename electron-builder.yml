@@ -30,7 +30,7 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   # CI turns this on with --config.mac.notarize=true when APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD
-  # and APPLE_TEAM_ID are present. Unsigned local builds stay installable via right-click > Open.
+  # and APPLE_TEAM_ID are present. Without a certificate CI signs ad hoc (see release.yml).
   notarize: false
 dmg:
   artifactName: ${name}-${version}-${arch}.${ext}

@@ -55,15 +55,20 @@ jobs:
           # An empty CSC_LINK makes electron-builder try to open "" as a certificate file, so
           # drop the signing variables entirely when the secrets are not configured.
           NOTARIZE=false
+          SIGN_ARGS=()
           if [ -n "$CSC_LINK" ] && [ -n "$APPLE_ID" ]; then
             NOTARIZE=true
           else
             unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
             export CSC_IDENTITY_AUTO_DISCOVERY=false
+            # Sign ad hoc instead. Left unsigned, the bundle's signature is broken and Apple silicon
+            # reports the app as "damaged"; ad hoc, the user can approve it in Privacy & Security.
+            # Hardened runtime only matters for notarization, and ad hoc it needs extra entitlements.
+            SIGN_ARGS=(--config.mac.identity=- --config.mac.hardenedRuntime=false)
           fi
           bun run typecheck
           bun run electron-vite build
-          bun run electron-builder --mac --publish always --config.mac.notarize=$NOTARIZE
+          bun run electron-builder --mac --publish always --config.mac.notarize=$NOTARIZE "${SIGN_ARGS[@]}"
 
   windows:
     needs: prepare
