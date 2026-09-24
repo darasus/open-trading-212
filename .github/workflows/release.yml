@@ -1,7 +1,8 @@
 name: Release
 
 # Tag a commit `vX.Y.Z` (matching package.json) to build signed installers and publish a
-# GitHub Release. Signing secrets are optional: without them the build is unsigned.
+# GitHub Release. Signing secrets are optional (see README, Releasing): without them macOS is
+# signed ad hoc and Windows is unsigned.
 on:
   push:
     tags: ['v*']
@@ -85,14 +86,34 @@ jobs:
       - name: Build and publish (Windows)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # Azure Artifact Signing (formerly Trusted Signing). Code signing keys must live on
+          # hardware now, so a .p12 in CSC_LINK no longer works for Windows. The service principal
+          # needs the "Artifact Signing Certificate Profile Signer" role on the signing account.
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+          AZURE_SIGNING_PUBLISHER: ${{ vars.AZURE_SIGNING_PUBLISHER }}
         shell: bash
         run: |
-          if [ -z "$CSC_LINK" ]; then unset CSC_LINK CSC_KEY_PASSWORD; fi
+          SIGN_ARGS=()
+          if [ -n "$AZURE_CLIENT_SECRET" ] && [ -n "$AZURE_SIGNING_ENDPOINT" ]; then
+            # publisherName must match the certificate's CN exactly: electron-updater checks it
+            # before installing an update, so later releases must be signed by the same identity.
+            SIGN_ARGS=(
+              "--config.win.azureSignOptions.endpoint=$AZURE_SIGNING_ENDPOINT"
+              "--config.win.azureSignOptions.codeSigningAccountName=$AZURE_SIGNING_ACCOUNT"
+              "--config.win.azureSignOptions.certificateProfileName=$AZURE_SIGNING_PROFILE"
+              "--config.win.azureSignOptions.publisherName=$AZURE_SIGNING_PUBLISHER"
+            )
+          else
+            unset AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET
+          fi
           bun run typecheck
           bun run electron-vite build
-          bun run electron-builder --win --publish always
+          bun run electron-builder --win --publish always "${SIGN_ARGS[@]}"
 
   publish:
     needs: [macos, windows]
