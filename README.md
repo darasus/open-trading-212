@@ -36,10 +36,10 @@ Honest limits: the allow-list covers `fetch` and Electron sessions, not raw sock
 
 ## Install
 
-Download the installer for your system from [Releases](https://github.com/darasus/open-trading-212/releases): a `.dmg` for macOS (Apple silicon or Intel) or a `-setup.exe` for Windows. The builds are not code-signed yet, so:
+Download the installer for your system from [Releases](https://github.com/darasus/open-trading-212/releases): a `.dmg` for macOS (Apple silicon or Intel) or a `-setup.exe` for Windows.
 
-- **macOS:** open the app once and dismiss the warning that Apple can't check it. Then go to System Settings, Privacy & Security, and choose Open Anyway next to open-trading-212. Automatic updates can't install on an unsigned app, so download new versions from Releases.
-- **Windows:** if SmartScreen warns you, choose More info, then Run anyway.
+- **macOS:** builds from 0.1.1 on are signed and notarized, so they open like any other app and update themselves. 0.1.0 can't update itself: download the latest version from Releases once.
+- **Windows:** the installer is not code-signed yet. If SmartScreen warns you, choose More info, then Run anyway.
 
 Or build it yourself; see [Development](#development).
 
