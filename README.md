@@ -36,10 +36,10 @@ Honest limits: the allow-list covers `fetch` and Electron sessions, not raw sock
 
 ## Install
 
-Download the installer for your system from [Releases](https://github.com/darasus/open-trading-212/releases): a `.dmg` for macOS (Apple silicon or Intel) or a `-setup.exe` for Windows. The builds are not code-signed yet, so:
+Download the installer for your system from [Releases](https://github.com/darasus/open-trading-212/releases): a `.dmg` for macOS (Apple silicon or Intel) or a `-setup.exe` for Windows.
 
-- **macOS:** open the app once and dismiss the warning that Apple can't check it. Then go to System Settings, Privacy & Security, and choose Open Anyway next to open-trading-212. Automatic updates can't install on an unsigned app, so download new versions from Releases.
-- **Windows:** if SmartScreen warns you, choose More info, then Run anyway.
+- **macOS:** builds from 0.1.1 on are signed and notarized, so they open like any other app and update themselves. 0.1.0 can't update itself: download the latest version from Releases once.
+- **Windows:** the installer is not code-signed yet. If SmartScreen warns you, choose More info, then Run anyway.
 
 Or build it yourself; see [Development](#development).
 
@@ -86,7 +86,9 @@ In development only, the main process falls back to `ANTHROPIC_API_KEY`, `OPENAI
 
 ## Releasing
 
-Bump `version` in `package.json`, commit, tag `vX.Y.Z` and push the tag. The release workflow builds macOS (arm64 and x64) and Windows installers and publishes them to GitHub Releases. Add `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` as repository secrets to sign and notarize the macOS build; without them the build is unsigned.
+Bump `version` in `package.json`, commit, tag `vX.Y.Z` and push the tag. The release workflow builds macOS (arm64 and x64) and Windows installers and publishes them to GitHub Releases. Add `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` as repository secrets to sign and notarize the macOS build; without them it is signed ad hoc.
+
+The Windows build is signed with [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/quickstart) when these are set: the secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` for a service principal with the Artifact Signing Certificate Profile Signer role, and the repository variables `AZURE_SIGNING_ENDPOINT` (such as `https://weu.codesigning.azure.net`), `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE` and `AZURE_SIGNING_PUBLISHER` (the certificate's subject name, exactly). Without them the build is unsigned. Once a signed Windows release is out, keep signing with the same publisher: installed copies refuse updates signed by anyone else.
 
 ## License
 
