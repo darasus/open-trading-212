@@ -59,6 +59,27 @@ jobs:
           SIGN_ARGS=()
           if [ -n "$CSC_LINK" ] && [ -n "$APPLE_ID" ]; then
             NOTARIZE=true
+            # Import the certificate into our own keychain rather than letting electron-builder do
+            # it: 26.x unlocks its keychain with the .p12 password in set-key-partition-list, which
+            # fails with "The user name or passphrase you entered is not correct".
+            KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+            KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+            echo "::add-mask::$KEYCHAIN_PASSWORD"
+            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            security set-keychain-settings -lut 21600 "$KEYCHAIN"
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            base64 --decode <<<"$CSC_LINK" >"$RUNNER_TEMP/signing.p12"
+            security import "$RUNNER_TEMP/signing.p12" -k "$KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+            rm "$RUNNER_TEMP/signing.p12"
+            security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+            security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+            IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"Developer ID Application: \(.*\)"$/\1/p' | head -n 1)"
+            if [ -z "$IDENTITY" ]; then
+              echo "No valid Developer ID Application identity in MAC_CSC_LINK" >&2
+              exit 1
+            fi
+            unset CSC_LINK CSC_KEY_PASSWORD
+            export CSC_KEYCHAIN="$KEYCHAIN" CSC_NAME="$IDENTITY"
           else
             unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
             export CSC_IDENTITY_AUTO_DISCOVERY=false
