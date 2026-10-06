@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
  * Money in the account currency is integer cents (`*_cents`). Instrument prices and
@@ -23,7 +23,11 @@ export const t212Context = sqliteTable('t212_context', {
   currency: text('currency'),
   connectedAt: integer('connected_at').notNull(),
   lastSyncedAt: integer('last_synced_at'),
-  instrumentsSyncedAt: integer('instruments_synced_at')
+  instrumentsSyncedAt: integer('instruments_synced_at'),
+  /** Last time pies were read successfully. */
+  piesSyncedAt: integer('pies_synced_at'),
+  /** Why the last pie read failed, e.g. a key without the pies permission. Null when it worked. */
+  piesError: text('pies_error')
 })
 
 /**
@@ -86,6 +90,66 @@ export const position = sqliteTable('position', {
   openedAt: integer('opened_at'),
   updatedAt: integer('updated_at').notNull()
 })
+
+/** Pies from `/equity/pies` and `/equity/pies/{id}`. Replaced wholesale on every sync. */
+export const pie = sqliteTable('pie', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  /** Market value of the pie's holdings. */
+  valueCents: integer('value_cents').notNull(),
+  investedCents: integer('invested_cents').notNull(),
+  /** Unrealised P/L on the holdings. */
+  resultCents: integer('result_cents').notNull(),
+  /** P/L as a fraction of invested, as Trading 212 reports it. */
+  returnPct: real('return_pct'),
+  /** Uninvested cash sitting in the pie. */
+  cashCents: integer('cash_cents').notNull().default(0),
+  dividendsGainedCents: integer('dividends_gained_cents').notNull().default(0),
+  dividendsReinvestedCents: integer('dividends_reinvested_cents').notNull().default(0),
+  dividendsInCashCents: integer('dividends_in_cash_cents').notNull().default(0),
+  /** REINVEST | TO_ACCOUNT_CASH */
+  dividendCashAction: text('dividend_cash_action'),
+  goalCents: integer('goal_cents'),
+  /** Progress towards the goal, 0–1. */
+  progress: real('progress'),
+  /** AHEAD | ON_TRACK | BEHIND, relative to the goal. */
+  status: text('status'),
+  initialInvestmentCents: integer('initial_investment_cents'),
+  createdAt: integer('created_at'),
+  endAt: integer('end_at'),
+  publicUrl: text('public_url'),
+  updatedAt: integer('updated_at').notNull()
+})
+
+/** One instrument in a pie, with its target and actual weight. */
+export const pieInstrument = sqliteTable(
+  'pie_instrument',
+  {
+    pieId: integer('pie_id')
+      .notNull()
+      .references(() => pie.id, { onDelete: 'cascade' }),
+    ticker: text('ticker').notNull(),
+    /** Shares held through this pie. */
+    quantity: real('quantity').notNull(),
+    /** Target weight set in the pie, 0–1. */
+    expectedShare: real('expected_share').notNull(),
+    /** Actual weight by value, 0–1. */
+    currentShare: real('current_share').notNull(),
+    valueCents: integer('value_cents').notNull(),
+    investedCents: integer('invested_cents').notNull(),
+    resultCents: integer('result_cents').notNull(),
+    returnPct: real('return_pct'),
+    /** JSON array of { name, severity }, e.g. DELISTED or MAX_POSITION_SIZE_REACHED. */
+    issues: text('issues', { mode: 'json' })
+      .notNull()
+      .$type<{ name: string; severity: string | null }[]>()
+  },
+  (table) => [
+    primaryKey({ columns: [table.pieId, table.ticker] }),
+    index('idx_pie_instrument_ticker').on(table.ticker)
+  ]
+)
 
 /** Historical orders from `/equity/history/orders`, one row per order and fill. */
 export const order = sqliteTable(

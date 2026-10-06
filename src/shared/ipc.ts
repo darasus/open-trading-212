@@ -122,6 +122,77 @@ export type PositionRow = {
 export type AllocationBy = 'position' | 'currency' | 'type'
 export type AllocationSlice = { key: string; label: string; valueCents: number; share: number }
 
+/** Where a pie stands against its goal. */
+export type PieGoalStatus = 'AHEAD' | 'ON_TRACK' | 'BEHIND'
+
+export type PieIssue = {
+  /** e.g. DELISTED, SUSPENDED, MAX_POSITION_SIZE_REACHED. */
+  name: string
+  /** IRREVERSIBLE | REVERSIBLE | INFORMATIVE */
+  severity: string | null
+}
+
+export type PieInstrumentRow = {
+  ticker: string
+  name: string
+  /** Currency the instrument trades in, e.g. USD or GBX. */
+  instrumentCurrency: string | null
+  /** Shares held through this pie. */
+  quantity: number
+  valueCents: number
+  investedCents: number
+  /** Unrealised P/L in the account currency. */
+  resultCents: number
+  /** P/L as a fraction of invested, e.g. 0.12 for +12%. */
+  returnPct: number
+  /** Weight the pie aims for, 0–1. */
+  targetShare: number
+  /** Weight it has now, by value, 0–1. */
+  currentShare: number
+  issues: PieIssue[]
+}
+
+export type PieRow = {
+  id: number
+  name: string
+  /** Market value of the holdings, not counting `cashCents`. */
+  valueCents: number
+  investedCents: number
+  /** Unrealised P/L in the account currency. */
+  resultCents: number
+  /** P/L as a fraction of invested. */
+  returnPct: number
+  /** Uninvested cash in the pie. */
+  cashCents: number
+  dividendsGainedCents: number
+  dividendsReinvestedCents: number
+  dividendsInCashCents: number
+  dividendCashAction: 'REINVEST' | 'TO_ACCOUNT_CASH' | null
+  /** Null when the pie has no goal; then `progress` and `goalStatus` are null too. */
+  goalCents: number | null
+  /** Progress towards the goal, 0–1. */
+  progress: number | null
+  goalStatus: PieGoalStatus | null
+  initialInvestmentCents: number | null
+  createdAt: number | null
+  /** Target date for the goal. */
+  endAt: number | null
+  /** Shareable link on trading212.com, if the pie has one. */
+  publicUrl: string | null
+  /** Largest first. */
+  instruments: PieInstrumentRow[]
+}
+
+export type PiesState = {
+  currency: string | null
+  /** Largest first. */
+  pies: PieRow[]
+  /** Last successful read; null if pies were never read. */
+  syncedAt: number | null
+  /** Why the last read failed, e.g. the key lacks the pies permission. */
+  error: string | null
+}
+
 export type ActivityKind = 'buy' | 'sell' | 'dividend' | 'deposit' | 'withdrawal' | 'fee' | 'other'
 
 export type ActivityRow = {
@@ -242,6 +313,10 @@ export type OpenT212Api = {
     positions(): Promise<PositionRow[]>
     allocation(input: { by: AllocationBy }): Promise<AllocationSlice[]>
   }
+  pies: {
+    /** Every pie with its instruments, as of the last sync. */
+    list(): Promise<PiesState>
+  }
   activity: {
     list(query: ActivityQuery): Promise<{ rows: ActivityRow[]; total: number }>
   }
@@ -313,6 +388,9 @@ export const IPC = {
     summary: 'portfolio:summary',
     positions: 'portfolio:positions',
     allocation: 'portfolio:allocation'
+  },
+  pies: {
+    list: 'pies:list'
   },
   activity: {
     list: 'activity:list'

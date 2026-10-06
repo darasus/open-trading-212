@@ -20,6 +20,7 @@ import {
   insights,
   isActivityKind,
   listActivity,
+  listPies,
   listPositions,
   monthlyFlows,
   portfolioSummary,
@@ -182,6 +183,8 @@ export function registerIpc(): void {
     if (by !== 'position' && by !== 'currency' && by !== 'type') throw new Error('Invalid grouping')
     return allocation(by)
   })
+
+  ipcMain.handle(IPC.pies.list, () => listPies())
 
   ipcMain.handle(IPC.activity.list, (_event, query: ActivityQuery) =>
     listActivity({

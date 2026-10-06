@@ -33,7 +33,9 @@ Tables (SQLite, read-only):
 - cash_transaction(reference, type 'DEPOSIT'|'WITHDRAW'|'FEE'|'TRANSFER'|'INTEREST_ON_FREE_CASH'|'LENDING_INTEREST', amount_cents, currency, at)
 - account_snapshot(taken_at, currency, total_cents, invested_cents, positions_value_cents, unrealized_cents, realized_cents, cash_cents, reserved_cents, in_pies_cents) — one row per sync
 - instrument(ticker, name, short_name, isin, currency, type) — every tradable instrument
-Notes: *_cents columns are integer cents in the account currency; amount_cents is signed (buys, withdrawals and fees negative). price, average_price, current_price and gross_per_share are in the instrument currency (GBX = pence). Timestamps are ms since epoch (UTC); use datetime(at/1000,'unixepoch','localtime'). Quote the "order" table name.`
+- pie(id, name, value_cents, invested_cents, result_cents, return_pct, cash_cents, dividends_gained_cents, dividends_reinvested_cents, dividends_in_cash_cents, dividend_cash_action, goal_cents, progress, status 'AHEAD'|'ON_TRACK'|'BEHIND', initial_investment_cents, created_at, end_at) — the account's pies; value_cents excludes the pie's uninvested cash_cents
+- pie_instrument(pie_id, ticker, quantity, expected_share, current_share, value_cents, invested_cents, result_cents, return_pct) — holdings per pie; expected_share is the target weight and current_share the actual weight, both 0–1
+Notes: return_pct and progress are fractions (0.12 = 12%). *_cents columns are integer cents in the account currency; amount_cents is signed (buys, withdrawals and fees negative). price, average_price, current_price and gross_per_share are in the instrument currency (GBX = pence). Timestamps are ms since epoch (UTC); use datetime(at/1000,'unixepoch','localtime'). Quote the "order" table name.`
 
 export function runReadonlySql(query: string): {
   columns: string[]

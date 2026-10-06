@@ -119,6 +119,47 @@ export type RawCashTransaction = {
 
 export type Page<T> = { items?: T[]; nextPagePath?: string | null }
 
+/** Money result of a pie or of one instrument in it, in the account currency. */
+export type RawInvestmentResult = {
+  priceAvgInvestedValue?: number
+  priceAvgValue?: number
+  priceAvgResult?: number
+  priceAvgResultCoef?: number
+}
+
+/** One entry of `/equity/pies`. Carries the money figures but not the name. */
+export type RawPie = {
+  id?: number
+  cash?: number
+  dividendDetails?: { gained?: number; inCash?: number; reinvested?: number }
+  progress?: number
+  result?: RawInvestmentResult
+  status?: string
+}
+
+/** `/equity/pies/{id}`: the pie's settings and every instrument in it. */
+export type RawPieDetail = {
+  instruments?: {
+    ticker?: string
+    ownedQuantity?: number
+    currentShare?: number
+    expectedShare?: number
+    result?: RawInvestmentResult
+    issues?: { name?: string; severity?: string }[]
+  }[]
+  settings?: {
+    id?: number
+    name?: string
+    icon?: string
+    goal?: number
+    creationDate?: string
+    endDate?: string
+    initialInvestment?: number
+    dividendCashAction?: string
+    publicUrl?: string
+  }
+}
+
 // ---------- Errors ----------
 
 export class T212Error extends Error {
@@ -169,6 +210,8 @@ const LIMITS: { match: RegExp; bucket: string; requests: number; periodMs: numbe
     requests: 1,
     periodMs: 50_000
   },
+  { match: /^\/api\/v0\/equity\/pies(\?|$)/, bucket: 'pies', requests: 1, periodMs: 30_000 },
+  { match: /^\/api\/v0\/equity\/pies\/\d+/, bucket: 'pie', requests: 1, periodMs: 5_000 },
   {
     match: /^\/api\/v0\/equity\/history\/orders/,
     bucket: 'orders',
@@ -338,6 +381,17 @@ export class T212Client {
     return this.get('/api/v0/equity/metadata/instruments')
   }
 
+  /** Pies with their money figures. Deprecated by Trading 212 but still served. */
+  pies(): Promise<RawPie[]> {
+    return this.get('/api/v0/equity/pies')
+  }
+
+  /** One pie's name, goal and instruments. Read-only: there is no call that changes a pie. */
+  pie(id: number): Promise<RawPieDetail> {
+    if (!Number.isSafeInteger(id)) throw new Error(`Invalid pie id: ${id}`)
+    return this.get(`/api/v0/equity/pies/${id}`)
+  }
+
   /** One page of a history stream. Pass `nextPagePath` from the previous page to continue. */
   historyPage<T>(stream: HistoryPath, nextPath?: string | null): Promise<Page<T>> {
     return this.get(resolveNextPath(HISTORY_PATHS[stream], nextPath))
@@ -426,6 +480,15 @@ export function markInstrumentsSynced(): void {
   getDb()
     .update(t212Context)
     .set({ instrumentsSyncedAt: Date.now() })
+    .where(eq(t212Context.id, 1))
+    .run()
+}
+
+/** Records the outcome of a pie read. A failure keeps the last pies that were read. */
+export function markPies(error: string | null): void {
+  getDb()
+    .update(t212Context)
+    .set(error === null ? { piesSyncedAt: Date.now(), piesError: null } : { piesError: error })
     .where(eq(t212Context.id, 1))
     .run()
 }

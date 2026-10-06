@@ -11,6 +11,7 @@ Not affiliated with or endorsed by Trading 212.
 ## What it does
 
 - **Overview:** account value over time, invested vs. unrealised P/L, cash, holdings with return on cost and weight, allocation by holding, currency and asset type, dividend income by month and by payer, rule-based insights, and a searchable feed of every trade, dividend and deposit.
+- **Pies:** every pie with its value, invested amount, P/L, cash and dividends, progress towards its goal, and each holding's actual weight against the pie's target. Viewing only; pies are edited in the Trading 212 app.
 - **Chat:** an AI analyst with tools that run locally over your data. Every tool call shows you exactly what the model received. Bring your own key for Anthropic, OpenAI, Google or OpenRouter, or run a model locally with Ollama. It explains your data; it is not a financial adviser and does not tell you what to buy or sell.
 
 ## Trust model
@@ -32,7 +33,7 @@ Enforced in code, not just claimed:
 - The SQL tool the model can use runs on a separate read-only connection with `query_only` set, SELECT-only checks and a row cap.
 - "Wipe everything" deletes the database, every secret and all chats, then restarts the app.
 
-Honest limits: the allow-list covers `fetch` and Electron sessions, not raw sockets, so a dependency that connected through Node's `http`, `https` or `net` modules directly would not be stopped. Trading 212 has no historical value endpoint, so on days without a sync the value chart is an estimate: holdings are rebuilt by replaying your trades and priced between the prices of your own fills and today's price. Days with a sync show the real account total. Sync only happens while the app is open, and history endpoints are limited to 6 requests a minute, so a long history takes a few minutes to backfill the first time. The app is only as read-only as the key you give it.
+Honest limits: the allow-list covers `fetch` and Electron sessions, not raw sockets, so a dependency that connected through Node's `http`, `https` or `net` modules directly would not be stopped. Trading 212 has no historical value endpoint, so on days without a sync the value chart is an estimate: holdings are rebuilt by replaying your trades and priced between the prices of your own fills and today's price. Days with a sync show the real account total. Sync only happens while the app is open, and history endpoints are limited to 6 requests a minute, so a long history takes a few minutes to backfill the first time. Pies come from an endpoint Trading 212 marks as deprecated and limits to one pie every 5 seconds, so each sync spends a few seconds per pie; if the key lacks the pies permission, or the endpoint goes away, the Pies page says so and everything else keeps syncing. The app is only as read-only as the key you give it.
 
 ## Install
 
@@ -45,7 +46,7 @@ Or build it yourself; see [Development](#development).
 
 ## Getting started
 
-1. In the Trading 212 app: Settings, API (Beta), Generate API key. Tick only the read permissions (account, portfolio, metadata, history). Copy the key and the secret; the secret is shown once.
+1. In the Trading 212 app: Settings, API (Beta), Generate API key. Tick only the read permissions (account, portfolio, metadata, history, and pies if you use them). Copy the key and the secret; the secret is shown once.
 2. In open-trading-212: Settings, Connect Trading 212, pick Real money or Practice, paste both.
 3. Optional: under Settings, AI, pick a provider (Anthropic, OpenAI, Google, OpenRouter or Ollama), add its key, and choose a model. Model lists load live from the provider, and any model id can be typed in.
 

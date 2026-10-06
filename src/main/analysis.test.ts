@@ -4,18 +4,26 @@ import {
   dividendPayers,
   insights,
   listActivity,
+  listPies,
   listPositions,
   monthlyFlows,
   portfolioSummary,
   rangeTotals,
   valueHistory
 } from './analysis'
-import { storeCashTransactions, storeDividends, storeInstruments, storeOrders } from './t212/sync'
+import {
+  storeCashTransactions,
+  storeDividends,
+  storeInstruments,
+  storeOrders,
+  storePies
+} from './t212/sync'
 import {
   DAY,
   daysAgo,
   iso,
   resetDb,
+  seedContext,
   seedPosition,
   seedSnapshot,
   teardownDb
@@ -340,6 +348,57 @@ describe('insights', () => {
     expect(trend).toMatchObject({
       severity: 'warn',
       title: 'Dividend income down 50% year on year'
+    })
+  })
+})
+
+describe('listPies', () => {
+  it('returns pies largest first with named instruments and the read state', () => {
+    seedContext({ currency: 'GBP', piesSyncedAt: 1_000, piesError: null })
+    storeInstruments([{ ticker: 'VUSAl_EQ', name: 'Vanguard S&P 500', currencyCode: 'GBX' }])
+    seedPosition({ ticker: 'AAPL_US_EQ', name: 'Apple', instrumentCurrency: 'USD', valueCents: 1 })
+    storePies(
+      [
+        { id: 1, result: { priceAvgValue: 10, priceAvgInvestedValue: 8, priceAvgResult: 2 } },
+        { id: 2, cash: 1, result: { priceAvgValue: 50, priceAvgResultCoef: -0.1 } }
+      ],
+      new Map([
+        [
+          1,
+          {
+            settings: { name: 'Small', dividendCashAction: 'TO_ACCOUNT_CASH' },
+            instruments: [
+              { ticker: 'AAPL_US_EQ', expectedShare: 0.3, result: { priceAvgValue: 3 } },
+              { ticker: 'VUSAl_EQ', expectedShare: 0.7, result: { priceAvgValue: 7 } },
+              { ticker: 'UNKNOWN', expectedShare: 0, result: { priceAvgValue: 0 } }
+            ]
+          }
+        ],
+        [2, { settings: { name: 'Big', dividendCashAction: 'SOMETHING_NEW' } }]
+      ])
+    )
+    const state = listPies()
+    expect(state).toMatchObject({ currency: 'GBP', syncedAt: 1_000, error: null })
+    expect(state.pies.map((p) => p.name)).toEqual(['Big', 'Small'])
+    const [big, small] = state.pies
+    expect(big).toMatchObject({ returnPct: -0.1, cashCents: 100, dividendCashAction: null })
+    // No reported return: derived from result over invested.
+    expect(small).toMatchObject({ returnPct: 0.25, dividendCashAction: 'TO_ACCOUNT_CASH' })
+    expect(small.instruments.map((i) => [i.ticker, i.name, i.instrumentCurrency])).toEqual([
+      ['VUSAl_EQ', 'Vanguard S&P 500', 'GBX'],
+      ['AAPL_US_EQ', 'Apple', 'USD'],
+      ['UNKNOWN', 'UNKNOWN', null]
+    ])
+    expect(small.instruments[0]).toMatchObject({ targetShare: 0.7, issues: [] })
+  })
+
+  it('reports a failed read with no pies', () => {
+    seedContext({ piesError: 'missing permission' })
+    expect(listPies()).toEqual({
+      currency: 'EUR',
+      pies: [],
+      syncedAt: null,
+      error: 'missing permission'
     })
   })
 })

@@ -8,6 +8,10 @@ import type {
   DividendPayer,
   Insight,
   MonthlyFlow,
+  PieGoalStatus,
+  PieInstrumentRow,
+  PieIssue,
+  PiesState,
   PortfolioSummary,
   PositionRow
 } from '../shared/ipc'
@@ -155,6 +159,125 @@ export function allocation(by: AllocationBy): AllocationSlice[] {
     ]
   }
   return slices
+}
+
+// ---------- Pies ----------
+
+const GOAL_STATUSES: PieGoalStatus[] = ['AHEAD', 'ON_TRACK', 'BEHIND']
+
+function parseIssues(json: string): PieIssue[] {
+  try {
+    const parsed: unknown = JSON.parse(json)
+    return Array.isArray(parsed) ? (parsed as PieIssue[]) : []
+  } catch {
+    return []
+  }
+}
+
+/** Fraction of invested, preferring Trading 212's own figure. */
+function returnOf(reported: number | null, resultCents: number, investedCents: number): number {
+  if (reported !== null) return reported
+  return investedCents ? resultCents / investedCents : 0
+}
+
+export function listPies(): PiesState {
+  const db = getDb()
+  const context = db.get<{
+    currency: string | null
+    pies_synced_at: number | null
+    pies_error: string | null
+  }>(sql`SELECT currency, pies_synced_at, pies_error FROM t212_context WHERE id = 1`)
+  const pies = db.all<{
+    id: number
+    name: string
+    value_cents: number
+    invested_cents: number
+    result_cents: number
+    return_pct: number | null
+    cash_cents: number
+    dividends_gained_cents: number
+    dividends_reinvested_cents: number
+    dividends_in_cash_cents: number
+    dividend_cash_action: string | null
+    goal_cents: number | null
+    progress: number | null
+    status: string | null
+    initial_investment_cents: number | null
+    created_at: number | null
+    end_at: number | null
+    public_url: string | null
+  }>(sql`SELECT * FROM pie ORDER BY value_cents + cash_cents DESC, name`)
+  const instruments = db.all<{
+    pie_id: number
+    ticker: string
+    name: string
+    instrument_currency: string | null
+    quantity: number
+    expected_share: number
+    current_share: number
+    value_cents: number
+    invested_cents: number
+    result_cents: number
+    return_pct: number | null
+    issues: string
+  }>(sql`
+    SELECT pi.*,
+      COALESCE(i.name, p.name, pi.ticker) AS name,
+      COALESCE(i.currency, p.instrument_currency) AS instrument_currency
+    FROM pie_instrument pi
+    LEFT JOIN instrument i ON i.ticker = pi.ticker
+    LEFT JOIN position p ON p.ticker = pi.ticker
+    ORDER BY pi.value_cents DESC, pi.expected_share DESC
+  `)
+  const byPie = new Map<number, PieInstrumentRow[]>()
+  for (const r of instruments) {
+    const list = byPie.get(r.pie_id) ?? []
+    list.push({
+      ticker: r.ticker,
+      name: r.name,
+      instrumentCurrency: r.instrument_currency,
+      quantity: r.quantity,
+      valueCents: r.value_cents,
+      investedCents: r.invested_cents,
+      resultCents: r.result_cents,
+      returnPct: returnOf(r.return_pct, r.result_cents, r.invested_cents),
+      targetShare: r.expected_share,
+      currentShare: r.current_share,
+      issues: parseIssues(r.issues)
+    })
+    byPie.set(r.pie_id, list)
+  }
+  return {
+    currency: context?.currency ?? null,
+    syncedAt: context?.pies_synced_at ?? null,
+    error: context?.pies_error ?? null,
+    pies: pies.map((p) => ({
+      id: p.id,
+      name: p.name,
+      valueCents: p.value_cents,
+      investedCents: p.invested_cents,
+      resultCents: p.result_cents,
+      returnPct: returnOf(p.return_pct, p.result_cents, p.invested_cents),
+      cashCents: p.cash_cents,
+      dividendsGainedCents: p.dividends_gained_cents,
+      dividendsReinvestedCents: p.dividends_reinvested_cents,
+      dividendsInCashCents: p.dividends_in_cash_cents,
+      dividendCashAction:
+        p.dividend_cash_action === 'REINVEST' || p.dividend_cash_action === 'TO_ACCOUNT_CASH'
+          ? p.dividend_cash_action
+          : null,
+      goalCents: p.goal_cents,
+      progress: p.progress,
+      goalStatus: GOAL_STATUSES.includes(p.status as PieGoalStatus)
+        ? (p.status as PieGoalStatus)
+        : null,
+      initialInvestmentCents: p.initial_investment_cents,
+      createdAt: p.created_at,
+      endAt: p.end_at,
+      publicUrl: p.public_url,
+      instruments: byPie.get(p.id) ?? []
+    }))
+  }
 }
 
 // ---------- Activity feed ----------

@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Loader2,
   Lock,
+  PieChart,
   Plus,
   RefreshCw,
   Settings,
@@ -14,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useActiveChatId, useChats, useDeleteChat, useNewChat } from '@/hooks/use-chats'
-import { usePositions } from '@/hooks/use-analysis'
+import { usePies, usePositions } from '@/hooks/use-analysis'
 import {
   isSyncActive,
   progressLabel,
@@ -27,12 +28,14 @@ import { cn } from '@/lib/utils'
 
 const nav = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
+  { to: '/pies', label: 'Pies', icon: PieChart },
   { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
   { to: '/settings', label: 'Settings', icon: Settings }
 ] as const
 
 const titles: Record<string, string> = {
   '/': 'Overview',
+  '/pies': 'Pies',
   '/chat': 'Chat',
   '/privacy': 'Privacy',
   '/settings': 'Settings'
@@ -44,6 +47,16 @@ function useSelectedTicker(): string | undefined {
     select: (s) => {
       const ticker = (s.location.search as Record<string, unknown>).ticker
       return typeof ticker === 'string' ? ticker : undefined
+    }
+  })
+}
+
+/** The pie open on the Pies page, already validated by its route. */
+function useSelectedPieId(): number | undefined {
+  return useRouterState({
+    select: (s) => {
+      const id = (s.location.search as Record<string, unknown>).id
+      return typeof id === 'number' ? id : undefined
     }
   })
 }
@@ -62,7 +75,7 @@ function NavItem({
   return (
     <Link
       to={to}
-      search={to === '/' ? {} : undefined}
+      search={to === '/' || to === '/pies' ? {} : undefined}
       data-active={active}
       className="flex h-7 items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-foreground"
     >
@@ -308,6 +321,8 @@ export function AppShell(): React.JSX.Element {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const ticker = useSelectedTicker()
   const positions = usePositions()
+  const pieId = useSelectedPieId()
+  const pies = usePies(pathname === '/pies')
   const chats = useChats(pathname === '/chat')
   const activeChatId = useActiveChatId()
 
@@ -316,9 +331,13 @@ export function AppShell(): React.JSX.Element {
       ? ticker
         ? (positions.data?.find((p) => p.ticker === ticker)?.name ?? ticker)
         : null
-      : pathname === '/chat'
-        ? (chats.data?.find((c) => c.id === activeChatId)?.title ?? null)
-        : null
+      : pathname === '/pies'
+        ? pieId !== undefined
+          ? (pies.data?.pies.find((p) => p.id === pieId)?.name ?? null)
+          : null
+        : pathname === '/chat'
+          ? (chats.data?.find((c) => c.id === activeChatId)?.title ?? null)
+          : null
   const title = titles[pathname] ?? 'open-trading-212'
 
   return (
@@ -361,7 +380,7 @@ export function AppShell(): React.JSX.Element {
               ) : null}
             </h1>
             <div className="ml-auto flex items-center gap-1">
-              {pathname === '/' ? <HeaderSync /> : null}
+              {pathname === '/' || pathname === '/pies' ? <HeaderSync /> : null}
             </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
