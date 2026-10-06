@@ -2,7 +2,8 @@ import type { MonthlyFlow, PortfolioSummary } from '@shared/ipc'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-function Stat({
+/** One figure with an eyebrow label and a muted foot line, for a hairline-divided strip. */
+export function Stat({
   label,
   value,
   foot,

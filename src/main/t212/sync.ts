@@ -8,6 +8,8 @@ import {
   historyCursor,
   instrument,
   order,
+  pie,
+  pieInstrument,
   position,
   syncRun
 } from '../db/schema'
@@ -15,12 +17,15 @@ import {
   getClient,
   getContext,
   markInstrumentsSynced,
+  markPies,
   markSynced,
   type RawAccountSummary,
   type RawCashTransaction,
   type RawDividend,
   type RawHistoricalOrder,
   type RawInstrument,
+  type RawPie,
+  type RawPieDetail,
   type RawPosition,
   type Page,
   type T212Client
@@ -122,6 +127,99 @@ export function storeInstruments(raw: RawInstrument[]): number {
     }
   })
   return count
+}
+
+// ---------- Pies ----------
+
+const nullableCents = (value: number | null | undefined): number | null =>
+  value == null || Number.isNaN(value) ? null : toCents(value)
+
+/** Replaces every pie with the given list. Details are matched by id; a pie without one keeps a placeholder name. */
+export function storePies(list: RawPie[], details: Map<number, RawPieDetail>): number {
+  const db = getDb()
+  const now = Date.now()
+  const pies = list.filter((p) => p.id != null)
+  db.transaction((tx) => {
+    tx.delete(pieInstrument).run()
+    tx.delete(pie).run()
+    for (const p of pies) {
+      const id = p.id!
+      const detail = details.get(id)
+      const settings = detail?.settings ?? {}
+      const result = p.result ?? {}
+      const dividends = p.dividendDetails ?? {}
+      tx.insert(pie)
+        .values({
+          id,
+          name: settings.name?.trim() || `Pie ${id}`,
+          icon: settings.icon ?? null,
+          valueCents: toCents(result.priceAvgValue),
+          investedCents: toCents(result.priceAvgInvestedValue),
+          resultCents: toCents(result.priceAvgResult),
+          returnPct: result.priceAvgResultCoef ?? null,
+          cashCents: toCents(p.cash),
+          dividendsGainedCents: toCents(dividends.gained),
+          dividendsReinvestedCents: toCents(dividends.reinvested),
+          dividendsInCashCents: toCents(dividends.inCash),
+          dividendCashAction: settings.dividendCashAction ?? null,
+          // Trading 212 reports 0 when no goal is set.
+          goalCents: settings.goal ? toCents(settings.goal) : null,
+          progress: settings.goal ? (p.progress ?? null) : null,
+          status: settings.goal ? (p.status ?? null) : null,
+          initialInvestmentCents: nullableCents(settings.initialInvestment),
+          createdAt: parseTime(settings.creationDate),
+          endAt: parseTime(settings.endDate),
+          publicUrl: settings.publicUrl ?? null,
+          updatedAt: now
+        })
+        .run()
+      const seen = new Set<string>()
+      for (const i of detail?.instruments ?? []) {
+        if (!i.ticker || seen.has(i.ticker)) continue
+        seen.add(i.ticker)
+        tx.insert(pieInstrument)
+          .values({
+            pieId: id,
+            ticker: i.ticker,
+            quantity: i.ownedQuantity ?? 0,
+            expectedShare: i.expectedShare ?? 0,
+            currentShare: i.currentShare ?? 0,
+            valueCents: toCents(i.result?.priceAvgValue),
+            investedCents: toCents(i.result?.priceAvgInvestedValue),
+            resultCents: toCents(i.result?.priceAvgResult),
+            returnPct: i.result?.priceAvgResultCoef ?? null,
+            issues: (i.issues ?? [])
+              .filter((issue) => issue.name)
+              .map((issue) => ({ name: issue.name!, severity: issue.severity ?? null }))
+          })
+          .run()
+      }
+    }
+  })
+  return pies.length
+}
+
+/**
+ * Reads every pie and its detail. Pies are optional: a key without the pies permission, or
+ * the deprecated endpoint going away, is recorded for the Pies page and never fails the sync.
+ * Each detail is its own request at 1 per 5 seconds, so this takes a while with many pies.
+ */
+export async function syncPies(client: T212Client, onProgress: ProgressListener): Promise<number> {
+  try {
+    onProgress({ phase: 'account', message: 'Loading pies' })
+    const list = ((await client.pies()) ?? []).filter((p) => p.id != null)
+    const details = new Map<number, RawPieDetail>()
+    for (const [index, p] of list.entries()) {
+      onProgress({ phase: 'account', message: `Loading pie ${index + 1} of ${list.length}` })
+      details.set(p.id!, (await client.pie(p.id!)) ?? {})
+    }
+    const count = storePies(list, details)
+    markPies(null)
+    return count
+  } catch (error) {
+    markPies(error instanceof Error ? error.message : String(error))
+    return 0
+  }
 }
 
 // ---------- History streams ----------
@@ -363,6 +461,8 @@ export async function runSync(
       markInstrumentsSynced()
     }
 
+    await syncPies(client, onProgress)
+
     let activities = 0
     for (const stream of ['orders', 'dividends', 'transactions'] as const) {
       activities += await syncStream(client, stream, onProgress)
@@ -400,6 +500,8 @@ export function wipePortfolioData(): void {
   db.delete(dividend).run()
   db.delete(cashTransaction).run()
   db.delete(position).run()
+  db.delete(pieInstrument).run()
+  db.delete(pie).run()
   db.delete(accountSnapshot).run()
   db.delete(instrument).run()
   db.delete(historyCursor).run()

@@ -54,7 +54,7 @@ export function ConnectT212Card(): React.JSX.Element {
 
 const STEPS = [
   'In the Trading 212 app, open Settings → API (Beta) and generate a key.',
-  'Tick only the read permissions: account, portfolio, metadata and history.',
+  'Tick only the read permissions: account, portfolio, metadata, history, and pies if you use them.',
   'Copy the key and the secret. The secret is shown only once.'
 ]
 

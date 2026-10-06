@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { closeDb, getDb } from '../db'
-import { accountSnapshot, position } from '../db/schema'
+import { accountSnapshot, position, t212Context } from '../db/schema'
 import { closeReadonlyDb } from '../ai/readonly-sql'
 import { deleteAllSecrets } from '../keychain'
 
@@ -11,6 +11,8 @@ const TABLES = [
   'dividend',
   'cash_transaction',
   'position',
+  'pie_instrument',
+  'pie',
   'account_snapshot',
   'instrument',
   'history_cursor',
@@ -48,6 +50,14 @@ export function seedPosition(
       updatedAt: Date.now(),
       ...seed
     })
+    .run()
+}
+
+/** A connected account's context row, without touching the keychain. */
+export function seedContext(seed: Partial<typeof t212Context.$inferInsert> = {}): void {
+  getDb()
+    .insert(t212Context)
+    .values({ id: 1, environment: 'live', currency: 'EUR', connectedAt: Date.now(), ...seed })
     .run()
 }
 

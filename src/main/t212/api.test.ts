@@ -162,6 +162,34 @@ describe('T212Client', () => {
     await c.accountSummary()
     expect(sleep).toHaveBeenCalledWith(5_000)
   })
+
+  it('reads pies and pie details on their own rate-limit buckets', async () => {
+    let now = 0
+    const { fetch, calls } = fakeFetch([json([]), json({}), json({}), json([])])
+    const sleep = vi.fn(async (ms: number) => {
+      now += ms
+    })
+    const { client: c } = client(fetch, () => now, sleep)
+    await c.pies()
+    await c.pie(42)
+    await c.pie(43)
+    expect(calls.map((call) => call.url)).toEqual([
+      'https://live.trading212.com/api/v0/equity/pies',
+      'https://live.trading212.com/api/v0/equity/pies/42',
+      'https://live.trading212.com/api/v0/equity/pies/43'
+    ])
+    expect(calls.every((call) => call.init.method === 'GET')).toBe(true)
+    // The list and a detail do not wait on each other; two details are 5 s apart.
+    expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([5_000])
+    await c.pies()
+    expect(sleep).toHaveBeenLastCalledWith(25_000)
+  })
+
+  it('refuses a pie id that is not an integer', () => {
+    const { client: c } = client(fakeFetch([]).fetch)
+    expect(() => c.pie(Number.NaN)).toThrow(/Invalid pie id/)
+    expect(() => c.pie('1/../../orders' as unknown as number)).toThrow(/Invalid pie id/)
+  })
 })
 
 describe('resolveNextPath', () => {

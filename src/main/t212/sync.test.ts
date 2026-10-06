@@ -8,10 +8,13 @@ import {
   storeCashTransactions,
   storeDividends,
   storeOrders,
+  storePies,
   storePositions,
+  syncPies,
   syncStream
 } from './sync'
-import { iso, resetDb, teardownDb } from '../__tests__/helpers'
+import { T212Error, type RawPie, type RawPieDetail } from './api'
+import { iso, resetDb, seedContext, teardownDb } from '../__tests__/helpers'
 
 beforeEach(() => resetDb())
 afterAll(() => teardownDb())
@@ -224,7 +227,8 @@ describe('runSync', () => {
         { instrument: { ticker: 'A', name: 'A' }, walletImpact: { currentValue: 1134.56 } }
       ]),
       instruments: vi.fn(async () => [{ ticker: 'A', name: 'A Inc', type: 'STOCK' }]),
-      historyPage: vi.fn(async () => empty)
+      historyPage: vi.fn(async () => empty),
+      pies: vi.fn(async () => [])
     } as unknown as T212Client
     const events: string[] = []
     const result = await runSync((p) => events.push(p.phase), client)
@@ -238,5 +242,158 @@ describe('runSync', () => {
     })
     expect(count('instrument')).toBe(1)
     expect(events.at(-1)).toBe('done')
+  })
+
+  it('finishes the sync when pies cannot be read', async () => {
+    seedContext()
+    const empty = { items: [], nextPagePath: null }
+    const client = {
+      accountSummary: vi.fn(async () => ({ currency: 'EUR' })),
+      positions: vi.fn(async () => []),
+      instruments: vi.fn(async () => []),
+      historyPage: vi.fn(async () => empty),
+      pies: vi.fn(async () => {
+        throw new T212Error(403, 'The API key is missing the "pies:read" permission.')
+      })
+    } as unknown as T212Client
+    const events: string[] = []
+    await expect(runSync((p) => events.push(p.phase), client)).resolves.toEqual({
+      positions: 0,
+      activities: 0
+    })
+    expect(events.at(-1)).toBe('done')
+    expect(getDb().get(sql`SELECT pies_error FROM t212_context`)).toEqual({
+      pies_error: 'The API key is missing the "pies:read" permission.'
+    })
+  })
+})
+
+const RAW_PIES: RawPie[] = [
+  {
+    id: 1,
+    cash: 2.5,
+    progress: 0.42,
+    status: 'BEHIND',
+    dividendDetails: { gained: 3.21, reinvested: 3, inCash: 0.21 },
+    result: {
+      priceAvgInvestedValue: 1000,
+      priceAvgValue: 1100.55,
+      priceAvgResult: 100.55,
+      priceAvgResultCoef: 0.1006
+    }
+  },
+  { id: 2, result: { priceAvgValue: 10 } },
+  { cash: 1 } // no id: skipped
+]
+
+const RAW_DETAILS = new Map<number, RawPieDetail>([
+  [
+    1,
+    {
+      settings: {
+        id: 1,
+        name: ' Dividends ',
+        goal: 5000,
+        creationDate: '2025-03-01T10:00:00Z',
+        endDate: '2030-01-01T00:00:00Z',
+        dividendCashAction: 'REINVEST',
+        publicUrl: 'https://www.trading212.com/pies/abc'
+      },
+      instruments: [
+        {
+          ticker: 'VUSAl_EQ',
+          ownedQuantity: 3.5,
+          expectedShare: 0.6,
+          currentShare: 0.55,
+          result: { priceAvgValue: 605.3, priceAvgInvestedValue: 550, priceAvgResult: 55.3 },
+          issues: [{ name: 'MAX_POSITION_SIZE_REACHED', severity: 'REVERSIBLE' }, {}]
+        },
+        { ticker: 'VUSAl_EQ' }, // duplicate: skipped
+        { ownedQuantity: 1 } // no ticker: skipped
+      ]
+    }
+  ],
+  [2, { settings: { goal: 0 } }]
+])
+
+describe('pies', () => {
+  it('stores pies in cents with their instruments, and names pies that have none', () => {
+    expect(storePies(RAW_PIES, RAW_DETAILS)).toBe(2)
+    expect(getDb().get(sql`SELECT * FROM pie WHERE id = 1`)).toMatchObject({
+      name: 'Dividends',
+      value_cents: 110055,
+      invested_cents: 100000,
+      result_cents: 10055,
+      return_pct: 0.1006,
+      cash_cents: 250,
+      dividends_gained_cents: 321,
+      dividends_reinvested_cents: 300,
+      dividends_in_cash_cents: 21,
+      dividend_cash_action: 'REINVEST',
+      goal_cents: 500000,
+      progress: 0.42,
+      status: 'BEHIND',
+      created_at: Date.parse('2025-03-01T10:00:00Z')
+    })
+    // A goal of 0 means no goal, so progress and status mean nothing either.
+    expect(
+      getDb().get(sql`SELECT name, goal_cents, progress, status FROM pie WHERE id = 2`)
+    ).toEqual({ name: 'Pie 2', goal_cents: null, progress: null, status: null })
+    expect(getDb().all(sql`SELECT * FROM pie_instrument`)).toEqual([
+      expect.objectContaining({
+        pie_id: 1,
+        ticker: 'VUSAl_EQ',
+        quantity: 3.5,
+        expected_share: 0.6,
+        current_share: 0.55,
+        value_cents: 60530,
+        result_cents: 5530,
+        issues: JSON.stringify([{ name: 'MAX_POSITION_SIZE_REACHED', severity: 'REVERSIBLE' }])
+      })
+    ])
+  })
+
+  it('replaces pies wholesale so deleted ones disappear', () => {
+    storePies(RAW_PIES, RAW_DETAILS)
+    storePies([{ id: 2 }], new Map())
+    expect(count('pie')).toBe(1)
+    expect(count('pie_instrument')).toBe(0)
+  })
+
+  it('reads the list, then each detail, and records the read', async () => {
+    seedContext()
+    const client = {
+      pies: vi.fn(async () => RAW_PIES),
+      pie: vi.fn(async (id: number) => RAW_DETAILS.get(id) ?? {})
+    } as unknown as T212Client & { pie: ReturnType<typeof vi.fn> }
+    const messages: string[] = []
+    const stored = await syncPies(client, (p) => {
+      if (p.phase === 'account') messages.push(p.message)
+    })
+    expect(stored).toBe(2)
+    expect(client.pie.mock.calls.map(([id]) => id)).toEqual([1, 2])
+    expect(messages).toEqual(['Loading pies', 'Loading pie 1 of 2', 'Loading pie 2 of 2'])
+    const context = getDb().get<{ pies_synced_at: number; pies_error: string | null }>(
+      sql`SELECT pies_synced_at, pies_error FROM t212_context`
+    )
+    expect(context?.pies_synced_at).toBeGreaterThan(0)
+    expect(context?.pies_error).toBeNull()
+  })
+
+  it('keeps the last pies and records why when a read fails', async () => {
+    seedContext({ piesSyncedAt: 123 })
+    storePies(RAW_PIES, RAW_DETAILS)
+    const client = {
+      pies: vi.fn(async () => RAW_PIES),
+      pie: vi.fn(async () => {
+        throw new T212Error(404, 'Trading 212 returned 404 for /api/v0/equity/pies/2')
+      })
+    } as unknown as T212Client
+    await expect(syncPies(client, () => undefined)).resolves.toBe(0)
+    expect(count('pie')).toBe(2)
+    expect(getDb().get(sql`SELECT pies_synced_at, pies_error FROM t212_context`)).toEqual({
+      pies_synced_at: 123,
+      pies_error: 'Trading 212 returned 404 for /api/v0/equity/pies/2'
+    })
   })
 })

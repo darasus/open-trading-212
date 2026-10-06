@@ -8,6 +8,7 @@ import {
 import { AppShell } from './components/app-shell'
 import { OverviewPage } from './routes/overview'
 import { ChatPage } from './routes/chat'
+import { PiesPage } from './routes/pies'
 import { PrivacyPage } from './routes/privacy'
 import { SettingsPage } from './routes/settings'
 
@@ -33,6 +34,18 @@ const overviewRoute = createRoute({
     tab: OVERVIEW_TABS.includes(search.tab as OverviewTab) ? (search.tab as OverviewTab) : undefined
   }),
   component: OverviewPage
+})
+/** The open pie lives in the URL, like the open position on the overview. */
+export type PiesSearch = { id?: number }
+
+const piesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pies',
+  validateSearch: (search: Record<string, unknown>): PiesSearch => {
+    const id = Number(search.id)
+    return { id: search.id != null && Number.isSafeInteger(id) ? id : undefined }
+  },
+  component: PiesPage
 })
 const chatRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -66,7 +79,13 @@ const settingsRoute = createRoute({
   component: SettingsPage
 })
 
-const routeTree = rootRoute.addChildren([overviewRoute, chatRoute, privacyRoute, settingsRoute])
+const routeTree = rootRoute.addChildren([
+  overviewRoute,
+  piesRoute,
+  chatRoute,
+  privacyRoute,
+  settingsRoute
+])
 
 // Hash history: the packaged app is served from file://, so path-based routing has nothing to resolve.
 export const router = createRouter({ routeTree, history: createHashHistory() })

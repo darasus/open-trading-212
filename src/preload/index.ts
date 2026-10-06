@@ -46,6 +46,9 @@ const api: OpenT212Api = {
     positions: () => ipcRenderer.invoke(IPC.portfolio.positions),
     allocation: (input: { by: AllocationBy }) => ipcRenderer.invoke(IPC.portfolio.allocation, input)
   },
+  pies: {
+    list: () => ipcRenderer.invoke(IPC.pies.list)
+  },
   activity: {
     list: (query: ActivityQuery) => ipcRenderer.invoke(IPC.activity.list, query)
   },

@@ -23,6 +23,15 @@ export function useAllocation(by: AllocationBy) {
   })
 }
 
+/** Every pie with its instruments. Pass `enabled: false` where only some routes need it. */
+export function usePies(enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.portfolio, 'pies'],
+    queryFn: () => window.ot212.pies.list(),
+    enabled
+  })
+}
+
 export function useValueHistory(days: number) {
   return useQuery({
     queryKey: [...queryKeys.analysis, 'value', days],

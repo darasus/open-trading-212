@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { Loader2, Unplug } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
+import { NotConnected } from '@/components/not-connected'
 import { ActivityTable } from '@/components/overview/activity-table'
 import { AllocationView } from '@/components/overview/allocation-view'
 import { DividendsView } from '@/components/overview/dividends-view'
@@ -10,15 +11,6 @@ import { InsightsView } from '@/components/overview/insights-view'
 import { PositionPanel } from '@/components/overview/position-panel'
 import { StatsStrip } from '@/components/overview/stats-strip'
 import { TabBar } from '@/components/overview/tab-bar'
-import { Button } from '@/components/ui/button'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from '@/components/ui/empty'
 import {
   useActivityPage,
   useInsights,
@@ -28,19 +20,8 @@ import {
   useValueHistory
 } from '@/hooks/use-analysis'
 import { progressLabel, useConnectionStatus, useSyncProgress } from '@/hooks/use-sync'
+import { isTyping } from '@/lib/utils'
 import type { OverviewTab } from '../router'
-
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
-    target.isContentEditable ||
-    target.closest('[role="dialog"], [role="listbox"], [role="menu"]') !== null
-  )
-}
 
 export function OverviewPage(): React.JSX.Element {
   const { ticker, tab = 'holdings' } = useSearch({ from: '/' })
@@ -90,29 +71,7 @@ export function OverviewPage(): React.JSX.Element {
 
   if (status.isLoading || !status.data) return <div className="flex-1" />
 
-  if (!status.data.connected) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-8">
-        <Empty className="max-w-md border animate-fade-up">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Unplug />
-            </EmptyMedia>
-            <EmptyTitle>Not connected</EmptyTitle>
-            <EmptyDescription>
-              Connect your Trading 212 account with a read-only API key. Everything stays on this
-              computer.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button asChild size="sm">
-              <Link to="/settings">Connect Trading 212</Link>
-            </Button>
-          </EmptyContent>
-        </Empty>
-      </div>
-    )
-  }
+  if (!status.data.connected) return <NotConnected />
 
   if (!summary.data) {
     return (
