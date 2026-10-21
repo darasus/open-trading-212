@@ -6,7 +6,7 @@ import { ConnectT212Card } from '@/components/connect-t212-card'
 import { WipeEverythingButton } from '@/components/danger-zone'
 import { Page } from '@/components/section'
 import { SettingsCard, SettingsHeader, SettingsRow } from '@/components/settings'
-import { UpdatesRow } from '@/components/updates-card'
+import { UpdatesRows } from '@/components/updates-card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { SettingsTab } from '../router'
@@ -72,7 +72,7 @@ function AppSettings(): React.JSX.Element {
         </SettingsRow>
       </SettingsCard>
       <SettingsCard title="Updates">
-        <UpdatesRow version={info.data?.version ?? ''} />
+        <UpdatesRows version={info.data?.version ?? ''} />
       </SettingsCard>
       <SettingsCard title="Danger zone" tone="destructive">
         <SettingsRow

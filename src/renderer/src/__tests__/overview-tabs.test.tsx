@@ -37,7 +37,9 @@ const month = (m: string, dividendsCents: number) => ({
 const api = {
   app: {
     getInfo: async () => ({ version: '0.1.0', dbPath: '/tmp/opentrading212.db' }),
-    allowedHosts: async () => ['live.trading212.com', 'api.anthropic.com', 'github.com']
+    allowedHosts: async () => ['live.trading212.com', 'api.anthropic.com', 'github.com'],
+    getUpdateState: async () => ({ status: 'idle' }),
+    onUpdateState: () => () => undefined
   },
   ai: {
     getStatus: async () => ({

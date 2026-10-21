@@ -45,9 +45,9 @@ import { deleteAllSecrets, deleteSecret, setSecret } from './keychain'
 import { openAppLink } from './links'
 import { allowedHosts } from './network'
 import { getSetting, setSetting } from './settings'
-import { checkForUpdates, quitAndInstall } from './updater'
+import { updater } from './updater'
 
-const SETTING_KEYS: SettingKey[] = ['ai.localOnly']
+const SETTING_KEYS: SettingKey[] = ['ai.localOnly', 'updates.auto']
 
 function broadcast(channel: string, payload: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) window.webContents.send(channel, payload)
@@ -128,8 +128,10 @@ export function registerIpc(): void {
     return true
   })
 
-  ipcMain.handle(IPC.app.checkForUpdates, () => checkForUpdates())
-  ipcMain.handle(IPC.app.installUpdate, () => quitAndInstall())
+  updater.onChange((state) => broadcast(IPC.app.updateState, state))
+  ipcMain.handle(IPC.app.getUpdateState, () => updater.getState())
+  ipcMain.handle(IPC.app.checkForUpdates, () => updater.check())
+  ipcMain.handle(IPC.app.installUpdate, () => updater.quitAndInstall())
 
   ipcMain.handle(IPC.settings.get, (_event, key: SettingKey) =>
     SETTING_KEYS.includes(key) ? getSetting(key) : null
@@ -138,6 +140,8 @@ export function registerIpc(): void {
     if (!SETTING_KEYS.includes(key)) throw new Error('Unknown setting')
     if (typeof value !== 'string') throw new Error('Setting value must be a string')
     setSetting(key, value)
+    // Turning automatic updates back on checks right away rather than at the next tick.
+    if (key === 'updates.auto' && value === 'true') void updater.check()
   })
 
   ipcMain.handle(IPC.t212.getStatus, () => getConnectionStatus())

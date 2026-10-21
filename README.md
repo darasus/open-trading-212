@@ -42,6 +42,8 @@ Download the installer for your system from [Releases](https://github.com/darasu
 - **macOS:** builds from 0.1.1 on are signed and notarized, so they open like any other app and update themselves. 0.1.0 can't update itself: download the latest version from Releases once.
 - **Windows:** the installer is not code-signed yet. If SmartScreen warns you, choose More info, then Run anyway.
 
+The app checks [Releases](https://github.com/darasus/open-trading-212/releases) for a newer version when it starts and every six hours, downloads it in the background, and installs it the next time you quit, or right away from the Restart button that appears in the sidebar. Turn the scheduled checks off in Settings → App; a manual check stays available there.
+
 Or build it yourself; see [Development](#development).
 
 ## Getting started
