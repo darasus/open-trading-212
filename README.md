@@ -8,6 +8,17 @@ A privacy-first portfolio cockpit for [Trading 212](https://www.trading212.com),
 
 Not affiliated with or endorsed by Trading 212.
 
+![Overview: account value over 90 days, invested, unrealised P/L, cash and dividends, and holdings](docs/screenshots/overview.png)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/pies.png" alt="A pie with its goal progress and each holding's actual weight against its target"></td>
+    <td><img src="docs/screenshots/chat.png" alt="The AI analyst answering a dividend question, with the tool result it was sent shown above the answer"></td>
+  </tr>
+</table>
+
+<sub>Screenshots use made-up demo data. `bun run screenshots` regenerates them.</sub>
+
 ## What it does
 
 - **Overview:** account value over time, invested vs. unrealised P/L, cash, holdings with return on cost and weight, allocation by holding, currency and asset type, dividend income by month and by payer, rule-based insights, and a searchable feed of every trade, dividend and deposit.
@@ -76,6 +87,7 @@ bun run format       # oxfmt; CI runs format:check
 bun run test         # vitest over the main-process logic, with a throwaway SQLite file
 bun run db:generate  # after editing src/main/db/schema.ts
 bun run build:mac    # unsigned local build into release/
+bun run screenshots  # README screenshots from made-up demo data
 ```
 
 In development only, the main process falls back to `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` or `OPENROUTER_API_KEY` from the shell if no key is stored for that provider, so the chat can be exercised without pasting one. Packaged builds never read the environment.

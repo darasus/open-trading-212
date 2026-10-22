@@ -8,6 +8,7 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!docs/*'
+  - '!scripts/*'
   - '!drizzle/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.oxlintrc.json,.oxfmtrc.json,dev-app-update.yml,CHANGELOG.md,README.md,AGENTS.md,CLAUDE.md}'

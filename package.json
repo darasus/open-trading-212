@@ -21,7 +21,8 @@
     "build:win": "bun run build && electron-builder --win",
     "build:mac": "bun run build && electron-builder --mac",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "screenshots": "electron-vite build && node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.82",
