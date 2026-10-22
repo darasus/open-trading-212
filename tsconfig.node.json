@@ -2,7 +2,7 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
   "include": [
     "electron.vite.config.*",
-    "vitest.config.ts",
+    "vitest.config.mts",
     "drizzle.config.ts",
     "src/main/**/*",
     "src/preload/**/*",
