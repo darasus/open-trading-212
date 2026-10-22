@@ -99,14 +99,15 @@ export async function streamChat(
   send: (event: ChatEvent) => void,
   model?: LanguageModel
 ): Promise<void> {
-  if (turns.has(chatId)) throw new Error('A reply is still being written in this chat.')
   let provider: AiProviderId = 'anthropic'
   let modelId = 'test'
   if (!model) {
-    const resolved = resolveChatModel()
+    const resolved = await resolveChatModel()
     if (!resolved.ok) throw new Error(resolved.message)
     ;({ provider, modelId, model } = resolved)
   }
+  // Checked after the await above, so a second send cannot slip in before `turns.set`.
+  if (turns.has(chatId)) throw new Error('A reply is still being written in this chat.')
 
   // Save the question before anything streams, so it survives whatever happens next.
   const title = titleFrom(messages)

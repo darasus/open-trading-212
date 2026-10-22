@@ -434,8 +434,9 @@ export function failInterruptedSyncs(): void {
 
 export async function runSync(
   onProgress: ProgressListener,
-  client: T212Client = getClient()
+  given?: T212Client
 ): Promise<SyncResult> {
+  const client = given ?? (await getClient())
   if (running) throw new Error('A sync is already running')
   running = true
   const db = getDb()

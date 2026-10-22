@@ -21,7 +21,12 @@ export const shell = {
 }
 
 export const safeStorage = {
-  isEncryptionAvailable: (): boolean => true,
-  encryptString: (value: string): Buffer => Buffer.from(`enc:${value}`, 'utf8'),
-  decryptString: (buffer: Buffer): string => buffer.toString('utf8').replace(/^enc:/, '')
+  isAsyncEncryptionAvailable: async (): Promise<boolean> => true,
+  encryptStringAsync: async (value: string): Promise<Buffer> => Buffer.from(`enc:${value}`, 'utf8'),
+  decryptStringAsync: async (
+    buffer: Buffer
+  ): Promise<{ result: string; shouldReEncrypt: boolean }> => ({
+    result: buffer.toString('utf8').replace(/^enc:/, ''),
+    shouldReEncrypt: false
+  })
 }

@@ -211,11 +211,11 @@ describe('connect', () => {
     const { fetch } = fakeFetch([json({ id: 42, currency: 'EUR' })])
     await connect({ apiKey: 'K', apiSecret: 'S', environment: 'demo' }, { fetch })
     expect(getContext()).toMatchObject({ environment: 'demo', accountId: 42, currency: 'EUR' })
-    expect(getSecret('t212.apiKey')).toBe('K')
-    expect(getSecret('t212.apiSecret')).toBe('S')
+    expect(await getSecret('t212.apiKey')).toBe('K')
+    expect(await getSecret('t212.apiSecret')).toBe('S')
     clearContext()
     expect(getContext()).toBeNull()
-    expect(getSecret('t212.apiKey')).toBeNull()
+    expect(await getSecret('t212.apiKey')).toBeNull()
   })
 
   it('stores nothing when Trading 212 rejects the key', async () => {
@@ -224,6 +224,6 @@ describe('connect', () => {
       connect({ apiKey: 'bad', apiSecret: 'bad', environment: 'live' }, { fetch })
     ).rejects.toThrow(/rejected/)
     expect(getContext()).toBeNull()
-    expect(getSecret('t212.apiKey')).toBeNull()
+    expect(await getSecret('t212.apiKey')).toBeNull()
   })
 })

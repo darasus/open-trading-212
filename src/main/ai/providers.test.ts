@@ -76,50 +76,50 @@ describe('parseOllamaUrl', () => {
 })
 
 describe('keys and models', () => {
-  it('reads the Anthropic key and model saved before multiple providers existed', () => {
-    setSecret('ai.apiKey', 'sk-ant-legacy-key-000000000')
+  it('reads the Anthropic key and model saved before multiple providers existed', async () => {
+    await setSecret('ai.apiKey', 'sk-ant-legacy-key-000000000')
     setSetting('ai.model', 'claude-sonnet-5')
-    expect(providerKey('anthropic')).toBe('sk-ant-legacy-key-000000000')
+    expect(await providerKey('anthropic')).toBe('sk-ant-legacy-key-000000000')
     expect(providerModel('anthropic')).toBe('claude-sonnet-5')
     setSetting('ai.model.anthropic', 'claude-haiku-4-5')
     expect(providerModel('anthropic')).toBe('claude-haiku-4-5')
   })
 
-  it('reports each provider, with Ollama needing no key', () => {
-    setSecret('ai.key.openai', 'sk-openai-key-0000000000000')
-    const info = Object.fromEntries(providerInfo().map((p) => [p.id, p]))
+  it('reports each provider, with Ollama needing no key', async () => {
+    await setSecret('ai.key.openai', 'sk-openai-key-0000000000000')
+    const info = Object.fromEntries((await providerInfo()).map((p) => [p.id, p]))
     expect(info.openai).toMatchObject({ hasKey: true, needsKey: true, model: null })
     expect(info.google).toMatchObject({ hasKey: false })
     expect(info.ollama).toMatchObject({ hasKey: true, needsKey: false, local: true })
     expect(info.anthropic.model).toBe('claude-opus-5')
   })
 
-  it('explains what blocks the chat', () => {
+  it('explains what blocks the chat', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '')
-    expect(resolveChatModel()).toMatchObject({ ok: false, reason: 'no-key' })
+    expect(await resolveChatModel()).toMatchObject({ ok: false, reason: 'no-key' })
 
-    setSecret('ai.key.anthropic', 'sk-ant-real-key-00000000000')
-    expect(resolveChatModel()).toMatchObject({
+    await setSecret('ai.key.anthropic', 'sk-ant-real-key-00000000000')
+    expect(await resolveChatModel()).toMatchObject({
       ok: true,
       provider: 'anthropic',
       modelId: 'claude-opus-5'
     })
 
     setSetting('ai.provider', 'ollama')
-    expect(resolveChatModel()).toMatchObject({ ok: false, reason: 'no-model' })
+    expect(await resolveChatModel()).toMatchObject({ ok: false, reason: 'no-model' })
     setSetting('ai.model.ollama', 'qwen3:8b')
     setSetting('ai.localOnly', 'true')
-    expect(resolveChatModel()).toMatchObject({ ok: true, provider: 'ollama' })
+    expect(await resolveChatModel()).toMatchObject({ ok: true, provider: 'ollama' })
 
     setSetting('ai.provider', 'openai')
-    expect(resolveChatModel()).toMatchObject({ ok: false, reason: 'local-only' })
+    expect(await resolveChatModel()).toMatchObject({ ok: false, reason: 'local-only' })
   })
 })
 
 describe('live model lists', () => {
   it('keeps only OpenAI chat models', async () => {
     setSetting('ai.provider', 'openai')
-    setSecret('ai.key.openai', 'sk-openai-key-0000000000000')
+    await setSecret('ai.key.openai', 'sk-openai-key-0000000000000')
     const fetch = vi.fn<(url: string) => Promise<Response>>(async () =>
       json({
         data: [
@@ -139,7 +139,7 @@ describe('live model lists', () => {
 
   it('keeps Gemini models that generate content and strips the models/ prefix', async () => {
     setSetting('ai.provider', 'google')
-    setSecret('ai.key.google', 'AIza-google-key-00000000000')
+    await setSecret('ai.key.google', 'AIza-google-key-00000000000')
     globalThis.fetch = vi.fn(async () =>
       json({
         models: [
@@ -160,7 +160,7 @@ describe('live model lists', () => {
 
   it('keeps only OpenRouter models that can call tools', async () => {
     setSetting('ai.provider', 'openrouter')
-    setSecret('ai.key.openrouter', 'sk-or-key-000000000000000000')
+    await setSecret('ai.key.openrouter', 'sk-or-key-000000000000000000')
     globalThis.fetch = vi.fn(async () =>
       json({
         data: [
@@ -191,7 +191,7 @@ describe('live model lists', () => {
     vi.stubEnv('OPENAI_API_KEY', '')
     setSetting('ai.provider', 'openai')
     await expect(listSelectedModels()).rejects.toThrow(/Add a OpenAI API key first/)
-    setSecret('ai.key.openai', 'sk-bad-key-0000000000000000')
+    await setSecret('ai.key.openai', 'sk-bad-key-0000000000000000')
     globalThis.fetch = vi.fn(
       async () => new Response('', { status: 401 })
     ) as unknown as typeof globalThis.fetch
