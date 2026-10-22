@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { LOCALE } from '@/lib/locale'
 
 /**
  * Underlined tabs on a hairline, Linear-style. Arrow keys move between tabs, as the
@@ -50,7 +51,7 @@ export function TabBar<T extends string>({
             {t.label}
             {t.count != null ? (
               <span className="num text-[11px] text-muted-foreground/70">
-                {t.count.toLocaleString('nl-NL')}
+                {t.count.toLocaleString(LOCALE)}
               </span>
             ) : null}
           </button>

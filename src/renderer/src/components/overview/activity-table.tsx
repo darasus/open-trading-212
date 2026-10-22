@@ -8,6 +8,7 @@ import { useActivityPage } from '@/hooks/use-analysis'
 import { formatDate, formatMoney, formatPrice, formatQuantity } from '@/lib/format'
 import { formatTime } from '@/lib/dates'
 import { cn } from '@/lib/utils'
+import { LOCALE } from '@/lib/locale'
 
 export const KIND_LABELS: Record<ActivityKind, string> = {
   buy: 'Buy',
@@ -234,7 +235,7 @@ export function ActivityTable({
         <span className="num">
           {total === 0
             ? 'No results'
-            : `${from.toLocaleString('nl-NL')}–${to.toLocaleString('nl-NL')} of ${total.toLocaleString('nl-NL')}`}
+            : `${from.toLocaleString(LOCALE)}–${to.toLocaleString(LOCALE)} of ${total.toLocaleString(LOCALE)}`}
         </span>
         <span className="ml-auto flex items-center gap-2">
           <span>Rows</span>

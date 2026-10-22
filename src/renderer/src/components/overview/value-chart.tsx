@@ -2,9 +2,10 @@ import { useMemo } from 'react'
 import { Area, AreaChart, CartesianGrid, Line, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ValuePoint } from '@shared/ipc'
 import { formatCompact, formatMoney } from '@/lib/format'
+import { LOCALE } from '@/lib/locale'
 
-const shortDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
-const longDate = new Intl.DateTimeFormat('en-GB', {
+const shortDate = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' })
+const longDate = new Intl.DateTimeFormat(LOCALE, {
   weekday: 'short',
   day: 'numeric',
   month: 'short',

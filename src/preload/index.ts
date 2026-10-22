@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import {
   IPC,
+  LOCALE_ARG,
   type ActivityQuery,
   type AiProviderId,
   type AllocationBy,
@@ -30,7 +31,10 @@ const api: OpenT212Api = {
       return () => ipcRenderer.off(IPC.app.updateState, handler)
     },
     checkForUpdates: () => ipcRenderer.invoke(IPC.app.checkForUpdates),
-    installUpdate: () => ipcRenderer.invoke(IPC.app.installUpdate)
+    installUpdate: () => ipcRenderer.invoke(IPC.app.installUpdate),
+    locale:
+      process.argv.find((arg) => arg.startsWith(LOCALE_ARG))?.slice(LOCALE_ARG.length) ||
+      navigator.language
   },
   settings: {
     get: (key: SettingKey) => ipcRenderer.invoke(IPC.settings.get, key),

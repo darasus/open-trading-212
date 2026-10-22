@@ -1,9 +1,11 @@
+import { LOCALE } from '@/lib/locale'
+
 const currencyFormatters = new Map<string, Intl.NumberFormat>()
 
 export function formatMoney(cents: number, currency = 'EUR'): string {
   let formatter = currencyFormatters.get(currency)
   if (!formatter) {
-    formatter = new Intl.NumberFormat('nl-NL', { style: 'currency', currency })
+    formatter = new Intl.NumberFormat(LOCALE, { style: 'currency', currency })
     currencyFormatters.set(currency, formatter)
   }
   return formatter.format(cents / 100)
@@ -18,12 +20,12 @@ export function formatCompact(cents: number): string {
   return `${text}k`
 }
 
-const dateFormatter = new Intl.DateTimeFormat('nl-NL', {
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: '2-digit',
   month: 'short',
   year: 'numeric'
 })
-const dateTimeFormatter = new Intl.DateTimeFormat('nl-NL', {
+const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: '2-digit',
   month: 'short',
   hour: '2-digit',
@@ -47,7 +49,7 @@ export function formatPercent(fraction: number, signed = true): string {
 
 /** Share quantities keep up to 6 decimals and drop trailing zeros. */
 export function formatQuantity(quantity: number): string {
-  return quantity.toLocaleString('nl-NL', { maximumFractionDigits: 6 })
+  return quantity.toLocaleString(LOCALE, { maximumFractionDigits: 6 })
 }
 
 /**
@@ -55,10 +57,10 @@ export function formatQuantity(quantity: number): string {
  * as a plain number with a "p" suffix.
  */
 export function formatPrice(price: number, currency: string | null): string {
-  if (!currency) return price.toLocaleString('nl-NL', { maximumFractionDigits: 4 })
-  if (currency === 'GBX') return `${price.toLocaleString('nl-NL', { maximumFractionDigits: 2 })}p`
+  if (!currency) return price.toLocaleString(LOCALE, { maximumFractionDigits: 4 })
+  if (currency === 'GBX') return `${price.toLocaleString(LOCALE, { maximumFractionDigits: 2 })}p`
   try {
-    return new Intl.NumberFormat('nl-NL', {
+    return new Intl.NumberFormat(LOCALE, {
       style: 'currency',
       currency,
       maximumFractionDigits: price < 10 ? 4 : 2

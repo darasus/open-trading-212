@@ -293,6 +293,9 @@ export type AiStatus = {
   blocked: AiBlockedReason
 }
 
+/** Command-line argument the main process uses to hand the formatting locale to the preload. */
+export const LOCALE_ARG = '--ot212-locale='
+
 export type OpenT212Api = {
   app: {
     getInfo(): Promise<AppInfo>
@@ -309,6 +312,8 @@ export type OpenT212Api = {
     checkForUpdates(): Promise<UpdateState>
     /** Quits and installs the downloaded update. No-op unless the state is `ready`. */
     installUpdate(): Promise<void>
+    /** Locale for numbers and dates: the OS region format, or `--lang` when the app is started with it. */
+    locale: string
   }
   settings: {
     get(key: SettingKey): Promise<string | null>

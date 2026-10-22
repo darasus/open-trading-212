@@ -9,6 +9,8 @@ import { closeReadonlyDb } from './ai/readonly-sql'
 import { openClickedLink } from './links'
 import { isUpdateUrl, lockDownMainNetwork } from './network'
 import { updater } from './updater'
+import { LOCALE_ARG } from '../shared/ipc'
+import { formattingLocale } from './locale'
 
 /**
  * The renderer must never talk to the network. Its only job is to render what
@@ -63,6 +65,11 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
+      // Numbers and dates follow the OS region format, which the sandboxed window can't read
+      // itself. `--lang` overrides it, for screenshots.
+      additionalArguments: [
+        `${LOCALE_ARG}${formattingLocale(app.commandLine.getSwitchValue('lang') || app.getSystemLocale())}`
+      ],
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
