@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { ActivityQuery, AllocationBy } from '@shared/ipc'
 import { queryKeys } from '@/hooks/use-sync'
+import { LOCALE } from '@/lib/locale'
 
 export function useSummary() {
   return useQuery({
@@ -76,7 +77,7 @@ export function useActivityPage(
 
 export function monthLabel(key: string, style: 'short' | 'long' = 'short'): string {
   const [year, month] = key.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(LOCALE, {
     month: style,
     year: style === 'long' ? 'numeric' : '2-digit'
   }).format(new Date(year, month - 1, 1))

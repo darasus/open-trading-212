@@ -1,3 +1,5 @@
+import { LOCALE } from '@/lib/locale'
+
 const DAY_MS = 86_400_000
 
 /** Local calendar day key, "2026-09-14". */
@@ -12,14 +14,14 @@ function startOfDay(ms: number): number {
   return d.getTime()
 }
 
-const weekdayLong = new Intl.DateTimeFormat('en-GB', { weekday: 'long' })
-const dayMonth = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
-const dayMonthYear = new Intl.DateTimeFormat('en-GB', {
+const weekdayLong = new Intl.DateTimeFormat(LOCALE, { weekday: 'long' })
+const dayMonth = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' })
+const dayMonthYear = new Intl.DateTimeFormat(LOCALE, {
   day: 'numeric',
   month: 'short',
   year: 'numeric'
 })
-const time = new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit' })
+const time = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit' })
 
 /** "Today", "Yesterday", "Thursday · 11 Sep", or "3 Mar 2025" once a year rolls over. */
 export function dayLabel(ms: number, now = Date.now()): string {
@@ -37,7 +39,7 @@ export function formatTime(ms: number): string {
 }
 
 export function formatLongDate(ms: number): string {
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(LOCALE, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
