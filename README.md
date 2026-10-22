@@ -75,6 +75,8 @@ Each Trading 212 account (Invest, Stocks ISA, Practice) has its own key.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for what gets merged and the conventions to follow.
+
 ```bash
 bun install
 bun run dev
