@@ -8,7 +8,8 @@ import {
   type OpenT212Api,
   type SettingKey,
   type SyncProgress,
-  type T212Environment
+  type T212Environment,
+  type UpdateState
 } from '../shared/ipc'
 
 /**
@@ -22,6 +23,12 @@ const api: OpenT212Api = {
     openExternal: (url: string) => ipcRenderer.invoke(IPC.app.openExternal, url),
     allowedHosts: () => ipcRenderer.invoke(IPC.app.allowedHosts),
     wipeEverything: () => ipcRenderer.invoke(IPC.app.wipeEverything),
+    getUpdateState: () => ipcRenderer.invoke(IPC.app.getUpdateState),
+    onUpdateState: (listener: (state: UpdateState) => void) => {
+      const handler = (_event: IpcRendererEvent, state: UpdateState): void => listener(state)
+      ipcRenderer.on(IPC.app.updateState, handler)
+      return () => ipcRenderer.off(IPC.app.updateState, handler)
+    },
     checkForUpdates: () => ipcRenderer.invoke(IPC.app.checkForUpdates),
     installUpdate: () => ipcRenderer.invoke(IPC.app.installUpdate)
   },

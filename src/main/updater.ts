@@ -1,44 +1,44 @@
 import { app } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import { getSetting } from './settings'
+import { createUpdater, type UpdateDriver } from './updates'
 
 /**
- * Updates come from GitHub Releases (see electron-builder.yml `publish`). electron-updater
- * only checks; nothing installs without the user quitting. Disabled in development builds.
- * On macOS only a signed build can install an update; an unsigned one finds it but macOS
- * refuses to apply it.
+ * Updates come from GitHub Releases (see electron-builder.yml `publish`). The app checks on
+ * launch and every six hours, downloads a newer version in the background, and installs it
+ * when the app quits or when the user clicks "Restart". `updates.auto` = 'false' turns the
+ * scheduled checks off; a manual check from Settings always works.
+ *
+ * Disabled in development builds. On macOS only a signed build can install an update; an
+ * unsigned one finds it but macOS refuses to apply it.
  */
-let configured = false
-
-function configure(): void {
-  if (configured) return
-  configured = true
+function electronDriver(): UpdateDriver {
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
   autoUpdater.logger = null
-}
-
-export type UpdateCheck =
-  | { status: 'disabled'; reason: string }
-  | { status: 'up-to-date'; version: string }
-  | { status: 'available'; version: string }
-  | { status: 'error'; message: string }
-
-export async function checkForUpdates(): Promise<UpdateCheck> {
-  if (!app.isPackaged) return { status: 'disabled', reason: 'development build' }
-  configure()
-  try {
-    const result = await autoUpdater.checkForUpdates()
-    const latest = result?.updateInfo.version
-    if (latest && latest !== app.getVersion()) {
+  return {
+    async checkForUpdates() {
+      const result = await autoUpdater.checkForUpdates()
+      if (!result?.isUpdateAvailable) return null
+      return result.updateInfo.version
+    },
+    async downloadUpdate() {
       await autoUpdater.downloadUpdate()
-      return { status: 'available', version: latest }
+    },
+    quitAndInstall: () => autoUpdater.quitAndInstall(),
+    onDownloadProgress(listener) {
+      autoUpdater.on('download-progress', (progress) => listener(progress.percent))
     }
-    return { status: 'up-to-date', version: app.getVersion() }
-  } catch (error) {
-    return { status: 'error', message: error instanceof Error ? error.message : String(error) }
   }
 }
 
-export function quitAndInstall(): void {
-  autoUpdater.quitAndInstall()
+export function automaticUpdatesEnabled(): boolean {
+  return getSetting('updates.auto') !== 'false'
 }
+
+export const updater = createUpdater({
+  driver: app.isPackaged ? electronDriver() : null,
+  disabledReason: 'development build',
+  currentVersion: app.getVersion(),
+  automatic: automaticUpdatesEnabled
+})

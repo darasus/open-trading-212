@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
+  ArrowUpCircle,
   ChevronRight,
   LayoutDashboard,
   Loader2,
@@ -15,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useActiveChatId, useChats, useDeleteChat, useNewChat } from '@/hooks/use-chats'
+import { installUpdate, useUpdateState } from '@/hooks/use-updates'
 import { usePies, usePositions } from '@/hooks/use-analysis'
 import {
   isSyncActive,
@@ -204,9 +206,34 @@ function StatusDot({ tone }: { tone: 'ok' | 'error' | 'idle' }): React.JSX.Eleme
   )
 }
 
+/** Shown above the sync row once a new version is downloaded. Restarting installs it. */
+function UpdateReadyRow(): React.JSX.Element | null {
+  const state = useUpdateState()
+  if (state?.status !== 'ready') return null
+  return (
+    <div className="group flex h-8 items-center gap-2 border-b border-sidebar-border pr-1 pl-2.5">
+      <span className="flex size-3.5 shrink-0 items-center justify-center">
+        <ArrowUpCircle className="size-3.5 text-positive" strokeWidth={2} />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-foreground/85">
+        Version {state.version} ready
+      </span>
+      <Button
+        size="xs"
+        variant="ghost"
+        onClick={installUpdate}
+        className="h-6 px-1.5 text-[11px] text-positive hover:text-positive"
+      >
+        Restart
+      </Button>
+    </div>
+  )
+}
+
 /**
- * Sidebar footer: sync state with a sync button, and the privacy promise linking to the
- * Privacy page. One quiet card, both rows on the same icon column.
+ * Sidebar footer: a downloaded update when there is one, sync state with a sync button, and
+ * the privacy promise linking to the Privacy page. One quiet card, every row on the same
+ * icon column.
  */
 function StatusCard(): React.JSX.Element {
   const status = useConnectionStatus()
@@ -235,6 +262,7 @@ function StatusCard(): React.JSX.Element {
 
   return (
     <div className="overflow-hidden rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-[11px]">
+      <UpdateReadyRow />
       <div className="group flex h-8 items-center gap-2 pr-1 pl-2.5">
         {syncing ? (
           <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />

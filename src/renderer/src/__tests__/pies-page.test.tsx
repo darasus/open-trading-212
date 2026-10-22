@@ -45,6 +45,7 @@ const pie: PieRow = {
 let piesState: PiesState = { currency: 'EUR', pies: [pie], syncedAt: Date.now(), error: null }
 
 const api = {
+  app: { getUpdateState: async () => ({ status: 'idle' }), onUpdateState: () => () => undefined },
   t212: {
     getStatus: async () => ({
       connected: true,

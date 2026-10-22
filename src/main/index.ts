@@ -8,6 +8,7 @@ import { failInterruptedSyncs } from './t212/sync'
 import { closeReadonlyDb } from './ai/readonly-sql'
 import { openClickedLink } from './links'
 import { isUpdateUrl, lockDownMainNetwork } from './network'
+import { updater } from './updater'
 
 /**
  * The renderer must never talk to the network. Its only job is to render what
@@ -97,6 +98,7 @@ app.whenReady().then(() => {
   registerIpc()
   createWindow()
   scheduleSync()
+  updater.start() // checks GitHub Releases on launch and every six hours, when enabled
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

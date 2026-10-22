@@ -19,14 +19,28 @@ export type AppInfo = {
   dbPath: string
 }
 
-export type UpdateCheck =
+/**
+ * Where the updater stands. The main process checks GitHub Releases on launch and every few
+ * hours (see `updates.auto`), downloads a newer version in the background and installs it
+ * when the app restarts. `ready` is the only state that needs the user.
+ */
+export type UpdateState =
   | { status: 'disabled'; reason: string }
-  | { status: 'up-to-date'; version: string }
-  | { status: 'available'; version: string }
-  | { status: 'error'; message: string }
+  /** Packaged, but no check has run yet. */
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'up-to-date'; version: string; checkedAt: number }
+  /** `percent` is null until the first progress event. */
+  | { status: 'downloading'; version: string; percent: number | null }
+  /** Downloaded and verified. Installs on quit, or now via `installUpdate`. */
+  | { status: 'ready'; version: string }
+  | { status: 'error'; message: string; checkedAt: number }
 
-/** Generic settings the renderer may read and write. AI provider settings have their own calls. */
-export type SettingKey = 'ai.localOnly'
+/**
+ * Generic settings the renderer may read and write. AI provider settings have their own calls.
+ * `updates.auto`: 'false' turns the scheduled update checks off (default on).
+ */
+export type SettingKey = 'ai.localOnly' | 'updates.auto'
 
 export type AiProviderId = 'anthropic' | 'openai' | 'google' | 'openrouter' | 'ollama'
 
@@ -288,7 +302,12 @@ export type OpenT212Api = {
     allowedHosts(): Promise<string[]>
     /** Asks for confirmation, then deletes the database, every secret, and relaunches. */
     wipeEverything(): Promise<boolean>
-    checkForUpdates(): Promise<UpdateCheck>
+    getUpdateState(): Promise<UpdateState>
+    /** Fires on every updater transition, including download progress. */
+    onUpdateState(listener: (state: UpdateState) => void): () => void
+    /** Checks now, whatever the `updates.auto` setting says, and resolves once the check settles. */
+    checkForUpdates(): Promise<UpdateState>
+    /** Quits and installs the downloaded update. No-op unless the state is `ready`. */
     installUpdate(): Promise<void>
   }
   settings: {
@@ -370,6 +389,8 @@ export const IPC = {
     openExternal: 'app:openExternal',
     allowedHosts: 'app:allowedHosts',
     wipeEverything: 'app:wipeEverything',
+    getUpdateState: 'app:getUpdateState',
+    updateState: 'app:updateState',
     checkForUpdates: 'app:checkForUpdates',
     installUpdate: 'app:installUpdate'
   },
