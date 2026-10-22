@@ -14,8 +14,8 @@
     "typecheck": "bun run typecheck:node && bun run typecheck:web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "electron-vite preview",
-    "dev": "electron-vite dev --watch",
+    "start": "install-electron && electron-vite preview",
+    "dev": "install-electron && electron-vite dev --watch",
     "build": "bun run typecheck && electron-vite build",
     "build:unpack": "bun run build && electron-builder --dir",
     "build:win": "bun run build && electron-builder --win",
@@ -59,7 +59,7 @@
     "cmdk": "^1.1.1",
     "cn": "^0.2.6",
     "drizzle-kit": "^0.31.10",
-    "electron": "^39.2.6",
+    "electron": "^45.0.0",
     "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
     "happy-dom": "^20.14.5",
@@ -88,7 +88,6 @@
     "url": "https://github.com/darasus/open-trading-212.git"
   },
   "trustedDependencies": [
-    "electron",
     "esbuild"
   ]
 }
