@@ -225,10 +225,11 @@ export function ollamaUrl(): string {
   }
 }
 
-export function providerKey(id: AiProviderId): string | null {
+export async function providerKey(id: AiProviderId): Promise<string | null> {
   const def = providerDef(id)
   if (!def.secret) return null
-  const stored = getSecret(def.secret) ?? (id === 'anthropic' ? getSecret('ai.apiKey') : null)
+  const stored =
+    (await getSecret(def.secret)) ?? (id === 'anthropic' ? await getSecret('ai.apiKey') : null)
   // In development only, fall back to the shell's environment so the chat can be tried
   // without pasting a key. Packaged builds never read the environment.
   return stored ?? (is.dev && def.devEnv ? process.env[def.devEnv] || null : null)
@@ -248,14 +249,15 @@ export function selectedProviderHosts(): string[] {
   return id === 'ollama' ? [ollamaUrl()] : providerDef(id).hosts
 }
 
-export function providerInfo(): AiProviderInfo[] {
-  return PROVIDERS.map((p) => ({
+export async function providerInfo(): Promise<AiProviderInfo[]> {
+  const keys = await Promise.all(PROVIDERS.map((p) => providerKey(p.id)))
+  return PROVIDERS.map((p, i) => ({
     id: p.id,
     name: p.name,
     description: p.description,
     local: p.local,
     needsKey: p.secret !== null,
-    hasKey: p.secret === null || providerKey(p.id) !== null,
+    hasKey: p.secret === null || keys[i] !== null,
     keyPlaceholder: p.keyPlaceholder,
     keyUrl: p.keyUrl,
     suggested: p.suggested,
@@ -263,14 +265,15 @@ export function providerInfo(): AiProviderInfo[] {
   }))
 }
 
-function configFor(id: AiProviderId): { apiKey: string; baseUrl: string } {
-  return { apiKey: providerKey(id) ?? '', baseUrl: ollamaUrl() }
+async function configFor(id: AiProviderId): Promise<{ apiKey: string; baseUrl: string }> {
+  return { apiKey: (await providerKey(id)) ?? '', baseUrl: ollamaUrl() }
 }
 
 /** The model the chat should use, or an explanation of what is missing. */
-export function resolveChatModel():
+export async function resolveChatModel(): Promise<
   | { ok: true; provider: AiProviderId; modelId: string; model: LanguageModel }
-  | { ok: false; reason: 'local-only' | 'no-key' | 'no-model'; message: string } {
+  | { ok: false; reason: 'local-only' | 'no-key' | 'no-model'; message: string }
+> {
   const id = selectedProvider()
   const def = providerDef(id)
   if (!def.local && getSetting('ai.localOnly') === 'true')
@@ -279,17 +282,17 @@ export function resolveChatModel():
       reason: 'local-only',
       message: 'Local-only mode is on. Turn it off, or switch to Ollama, to use the chat.'
     }
-  if (def.secret && !providerKey(id))
+  if (def.secret && !(await providerKey(id)))
     return { ok: false, reason: 'no-key', message: `Add a ${def.name} API key in Settings first.` }
   const modelId = providerModel(id)
   if (!modelId)
     return { ok: false, reason: 'no-model', message: `Pick a ${def.name} model in Settings.` }
-  return { ok: true, provider: id, modelId, model: def.create(configFor(id), modelId) }
+  return { ok: true, provider: id, modelId, model: def.create(await configFor(id), modelId) }
 }
 
 export async function listSelectedModels(): Promise<ModelOption[]> {
   const id = selectedProvider()
   const def = providerDef(id)
-  if (def.secret && !providerKey(id)) throw new Error(`Add a ${def.name} API key first.`)
-  return def.listModels(configFor(id))
+  if (def.secret && !(await providerKey(id))) throw new Error(`Add a ${def.name} API key first.`)
+  return def.listModels(await configFor(id))
 }

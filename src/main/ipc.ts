@@ -216,12 +216,12 @@ export function registerIpc(): void {
   )
   ipcMain.handle(IPC.analysis.insights, () => insights())
 
-  ipcMain.handle(IPC.ai.getStatus, (): AiStatus => {
+  ipcMain.handle(IPC.ai.getStatus, async (): Promise<AiStatus> => {
     const provider = selectedProvider()
-    const resolved = resolveChatModel()
+    const resolved = await resolveChatModel()
     return {
       provider,
-      providers: providerInfo(),
+      providers: await providerInfo(),
       model: providerModel(provider),
       localOnly: getSetting('ai.localOnly') === 'true',
       ollamaUrl: ollamaUrl(),
@@ -232,14 +232,14 @@ export function registerIpc(): void {
     if (!isProviderId(provider)) throw new Error('Unknown AI provider')
     setSetting('ai.provider', provider)
   })
-  ipcMain.handle(IPC.ai.setKey, (_event, input: { provider: unknown; key: unknown }) => {
+  ipcMain.handle(IPC.ai.setKey, async (_event, input: { provider: unknown; key: unknown }) => {
     const provider = input?.provider
     const key = typeof input?.key === 'string' ? input.key.trim() : ''
     if (!isProviderId(provider)) throw new Error('Unknown AI provider')
     const secret = providerDef(provider).secret
     if (!secret) throw new Error(`${providerDef(provider).name} does not use an API key`)
     if (key.length < 20 || /\s/.test(key)) throw new Error('That does not look like an API key')
-    setSecret(secret, key)
+    await setSecret(secret, key)
   })
   ipcMain.handle(IPC.ai.clearKey, (_event, provider: unknown) => {
     if (!isProviderId(provider)) throw new Error('Unknown AI provider')

@@ -427,14 +427,14 @@ export function getContext(): Context | null {
   return getDb().select().from(t212Context).where(eq(t212Context.id, 1)).get() ?? null
 }
 
-export function getClient(): T212Client {
+export async function getClient(): Promise<T212Client> {
   const context = getContext()
-  const apiKey = getSecret('t212.apiKey')
+  const apiKey = await getSecret('t212.apiKey')
   if (!context || !apiKey) throw new Error('Trading 212 is not connected')
   return new T212Client({
     environment: context.environment,
     apiKey,
-    apiSecret: getSecret('t212.apiSecret') ?? ''
+    apiSecret: (await getSecret('t212.apiSecret')) ?? ''
   })
 }
 
@@ -445,8 +445,8 @@ export async function connect(
 ): Promise<Context> {
   const client = new T212Client({ ...input, ...options })
   const summary = await client.accountSummary()
-  setSecret('t212.apiKey', input.apiKey)
-  if (input.apiSecret) setSecret('t212.apiSecret', input.apiSecret)
+  await setSecret('t212.apiKey', input.apiKey)
+  if (input.apiSecret) await setSecret('t212.apiSecret', input.apiSecret)
   const values = {
     environment: input.environment,
     accountId: summary?.id ?? null,

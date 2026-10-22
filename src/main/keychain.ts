@@ -33,23 +33,42 @@ function save(data: SecretFile): void {
   writeFileSync(filePath(), JSON.stringify(data), { mode: 0o600 })
 }
 
-function assertAvailable(): void {
-  if (!safeStorage.isEncryptionAvailable()) {
+async function assertAvailable(): Promise<void> {
+  if (!(await safeStorage.isAsyncEncryptionAvailable())) {
     throw new Error('OS keychain encryption is not available on this system.')
   }
 }
 
-export function getSecret(key: SecretKey): string | null {
-  const encoded = load()[key]
-  if (!encoded) return null
-  assertAvailable()
-  return safeStorage.decryptString(Buffer.from(encoded, 'base64'))
+async function encrypt(value: string): Promise<string> {
+  return (await safeStorage.encryptStringAsync(value)).toString('base64')
 }
 
-export function setSecret(key: SecretKey, value: string): void {
-  assertAvailable()
+/** Ciphertext written by the old synchronous `encryptString` still decrypts here. */
+export async function getSecret(key: SecretKey): Promise<string | null> {
+  const encoded = load()[key]
+  if (!encoded) return null
+  await assertAvailable()
+  const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(
+    Buffer.from(encoded, 'base64')
+  )
+  if (shouldReEncrypt) {
+    // The OS rotated the key: store the secret again under the current one, unless it
+    // was replaced while we were decrypting.
+    const reEncoded = await encrypt(result)
+    const data = load()
+    if (data[key] === encoded) {
+      data[key] = reEncoded
+      save(data)
+    }
+  }
+  return result
+}
+
+export async function setSecret(key: SecretKey, value: string): Promise<void> {
+  await assertAvailable()
+  const encoded = await encrypt(value)
   const data = load()
-  data[key] = safeStorage.encryptString(value).toString('base64')
+  data[key] = encoded
   save(data)
 }
 
