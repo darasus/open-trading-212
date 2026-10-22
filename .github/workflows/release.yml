@@ -37,7 +37,12 @@ jobs:
           elif [ "$GITHUB_REF_NAME" = main ]; then
             # Run from the Actions tab: tag this commit, unless the version is already taken.
             # A tag made with GITHUB_TOKEN doesn't start another run of this workflow.
-            EXISTING="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha 2>/dev/null || true)"
+            # `gh api` prints GitHub's error JSON on stdout when the tag is missing, so test the
+            # exit status before reading a commit out of it.
+            EXISTING=""
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+              EXISTING="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)"
+            fi
             if [ -z "$EXISTING" ]; then
               gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" >/dev/null
               echo "Tagged $GITHUB_SHA as $TAG"
