@@ -1,8 +1,9 @@
 name: Release
 
-# Tag a commit `vX.Y.Z` (matching package.json) to build signed installers and publish a
-# GitHub Release. Signing secrets are optional (see README, Releasing): without them macOS is
-# signed ad hoc and Windows is unsigned.
+# Builds signed installers and publishes a GitHub Release for the version in package.json.
+# Either push a `vX.Y.Z` tag, or run it from the Actions tab on main, which tags the commit
+# itself. Signing secrets are optional (see README, Releasing): without them macOS is signed
+# ad hoc and Windows is unsigned.
 on:
   push:
     tags: ['v*']
@@ -17,19 +18,44 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Create draft release
+      - name: Resolve the tag
+        id: tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
           VERSION="$(node -p "require('./package.json').version")"
-          if [ "$TAG" != "v$VERSION" ]; then
-            echo "Tag $TAG does not match package.json version $VERSION" >&2
+          TAG="v$VERSION"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            if [ "$GITHUB_REF_NAME" != "$TAG" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match package.json version $VERSION" >&2
+              exit 1
+            fi
+          elif [ "$GITHUB_REF_NAME" = main ]; then
+            # Run from the Actions tab: tag this commit, unless the version is already taken.
+            # A tag made with GITHUB_TOKEN doesn't start another run of this workflow.
+            EXISTING="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha 2>/dev/null || true)"
+            if [ -z "$EXISTING" ]; then
+              gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" >/dev/null
+              echo "Tagged $GITHUB_SHA as $TAG"
+            elif [ "$EXISTING" != "$GITHUB_SHA" ]; then
+              echo "$TAG is already released from another commit. Bump version in package.json first." >&2
+              exit 1
+            fi
+          else
+            echo "Run this from main, or push a v* tag. $GITHUB_REF_NAME is neither." >&2
             exit 1
           fi
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "open-trading-212 $VERSION" --notes ""
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag --title "open-trading-212 ${TAG#v}" --notes ""
 
   macos:
     needs: prepare
@@ -137,7 +163,7 @@ jobs:
           bun run electron-builder --win --publish always "${SIGN_ARGS[@]}"
 
   publish:
-    needs: [macos, windows]
+    needs: [prepare, macos, windows]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -145,4 +171,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release edit "${GITHUB_REF_NAME}" --draft=false
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false

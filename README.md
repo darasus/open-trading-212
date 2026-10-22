@@ -103,7 +103,7 @@ In development only, the main process falls back to `ANTHROPIC_API_KEY`, `OPENAI
 
 ## Releasing
 
-Bump `version` in `package.json`, commit, tag `vX.Y.Z` and push the tag. The release workflow builds macOS (arm64 and x64) and Windows installers and publishes them to GitHub Releases. Add `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` as repository secrets to sign and notarize the macOS build; without them it is signed ad hoc.
+Bump `version` in `package.json` in a PR and merge it. Then run the Release workflow from the Actions tab on `main`: it tags the commit `vX.Y.Z` and refuses a version that's already released. Pushing a `vX.Y.Z` tag yourself starts the same workflow. It builds macOS (arm64 and x64) and Windows installers and publishes them to GitHub Releases. Add `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` as repository secrets to sign and notarize the macOS build; without them it is signed ad hoc.
 
 The Windows build is signed with [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/quickstart) when these are set: the secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` for a service principal with the Artifact Signing Certificate Profile Signer role, and the repository variables `AZURE_SIGNING_ENDPOINT` (such as `https://weu.codesigning.azure.net`), `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE` and `AZURE_SIGNING_PUBLISHER` (the certificate's subject name, exactly). Without them the build is unsigned. Once a signed Windows release is out, keep signing with the same publisher: installed copies refuse updates signed by anyone else.
 
