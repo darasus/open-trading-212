@@ -1,6 +1,6 @@
 {
   "name": "open-trading-212",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Privacy-first portfolio cockpit for Trading 212 with a local AI analyst. No server: keys in your OS keychain, data in local SQLite.",
   "main": "./out/main/index.js",
   "author": "Ilia Daraselia",
